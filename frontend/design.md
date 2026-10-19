@@ -25,6 +25,12 @@ priority:
   low: "#10B981"
   none: "#94A3B8"
 typography:
+  display:
+    fontFamily: Inter
+    fontSize: 2rem
+    fontWeight: 600
+    lineHeight: 2.5rem
+    letterSpacing: -0.02em
   h1:
     fontFamily: Inter
     fontSize: 2rem
@@ -135,8 +141,9 @@ The palette is built around a near-white surface, a deep-ink text color, and a s
 
 ## Typography
 
-Inter at five steps. One family, predictable rhythm.
+Inter at five app steps, plus one landing-only display role. One family, predictable rhythm.
 
+- **display — 2rem / 600:** The landing hero statement only. Same size as h1 but one step lighter, because it sits beside a dense product preview whose own labels are 600–700; weight would add noise, size already makes it the top of the page. Never inside the app.
 - **h1 — 2rem / 700:** Page titles ("Board: Q2 Roadmap", "My Tasks"). One per view.
 - **h2 — 1.5rem / 600:** Section headers, large modal titles (settings, create flows), column titles.
 - **h3 — 1.25rem / 600:** Task modal titles (`task-modal`, `task-quick-view`) — the card title is long user text, so it steps down from h2 to keep two-line titles calm.

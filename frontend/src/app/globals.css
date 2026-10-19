@@ -30,6 +30,12 @@
      their own reds. (success #047857 to be tokenised when done-chips migrate.) */
   --color-danger: #b91c1c;
   --color-danger-hover: #991b1b;
+
+  /* design.md → typography.display. Landing hero statement only. */
+  --text-display: 2rem;
+  --text-display--line-height: 2.5rem;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 600;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -43,6 +49,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Tailwind v4 preflight resets buttons to cursor: default. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 /* App-wide slim scrollbars.

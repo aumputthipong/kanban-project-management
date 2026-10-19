@@ -10,7 +10,10 @@ export async function Navbar() {
     <header className="h-14 border-b border-slate-200 bg-white shrink-0">
       <nav className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
             <div className="relative w-10 h-10 overflow-hidden rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center">
               <Image
                 src="/Turtask.png"
@@ -33,7 +36,7 @@ export async function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+              className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Sign In
             </Link>

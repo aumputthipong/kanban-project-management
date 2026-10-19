@@ -46,12 +46,13 @@ A Kanban that covers the work around the board, not just the board:
 - **Terminology:** Project is the container (members, settings, planning, stash). Board is only the Kanban view. The planning entity is a **Note** in the UI (internally `session`).
 - **Roles:** Owner, Manager, Member, enforced on the backend; the UI only hides what a role cannot do.
 - **Intentional gaps:** no roll-over of overdue tasks into Today (needs a backend field), no capacity or hours framing in the Team view, no card archive.
-- **Entry surfaces are Thai-first** (decided 2026-10-19): sentences and headlines in Thai, with feature names and actions in English per the copy rule above.
+- **Entry surfaces are Thai-first** (decided 2026-10-19): sentences and headlines in Thai, with feature names and actions in English per the copy rule above. Exceptions, by the author: the landing hero headline is a single English line, "Realtime task board for team projects", and the "How it works" section uses English headings (section and step titles) over Thai body text.
 - **Two entry paths on the landing:** **Try demo** is for anyone who wants to try without logging in (the evaluator's path, so it carries the primary weight). **Open Workspace** is the real-user path to their own workspace and requires login. Signed-in visitors are redirected away from `/` server-side, so everyone who sees the landing is signed out.
 
 ## Brand Commitments
 
-- Name: **Turtask**. Current landing tagline: "Less standup. More shipping."
+- Name: **Turtask**.
+- **Landing goals (author, 2026-10-19):** interesting, minimal, and true to the product with nothing embellished. Any product preview shows exactly what Try demo opens (the demo fixture's board, tasks and members), using the app's own components or styling; no invented projects, people or features. No demo videos, animated proofs, or author/GitHub links on the page. Below the hero, speak only to the two core features: the Task board and the project Workspace.
 - Voice: plain, calm, readable Thai for sentences; no jargon; no emoji anywhere in UI or copy.
 
 ## Evidence on Hand
