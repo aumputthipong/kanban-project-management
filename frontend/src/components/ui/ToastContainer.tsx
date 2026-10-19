@@ -24,7 +24,10 @@ export function ToastContainer() {
   if (!isClient) return null;
 
   return createPortal(
-    <div className="fixed bottom-6 inset-x-4 z-10000 flex flex-col items-center gap-2 pointer-events-none">
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 inset-x-4 z-10000 flex flex-col items-center gap-2 pointer-events-none">
       {toasts.map((t) => (
         <div
           key={t.id}
@@ -37,13 +40,14 @@ export function ToastContainer() {
                 t.onAction?.();
                 dismiss(t.id);
               }}
-              className="shrink-0 whitespace-nowrap px-2 py-0.5 text-blue-300 hover:text-blue-200 font-semibold uppercase text-xs tracking-wide cursor-pointer"
+              className="shrink-0 whitespace-nowrap px-2 py-0.5 text-blue-300 hover:text-blue-200 font-semibold cursor-pointer"
             >
               {t.actionLabel}
             </button>
           )}
           <button
             onClick={() => dismiss(t.id)}
+            aria-label="Dismiss"
             className="shrink-0 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <X size={14} />
