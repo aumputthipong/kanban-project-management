@@ -9,8 +9,9 @@ import { TryDemoButton } from "@/components/demo/TryDemoButton";
 import { LANDING_PATH, type UserSettings } from "@/types/userSettings";
 
 export const metadata: Metadata = {
-  title: "Turtask — Less standup. More shipping.",
-  description: "Real-time Kanban workspace. Drag a card, watch it travel.",
+  title: "Turtask — ลาก Task ครั้งเดียว ทั้งทีมเห็นพร้อมกัน",
+  description:
+    "Kanban แบบ realtime สำหรับทีมเล็ก ลองบอร์ดตัวอย่างได้ทันทีโดยไม่ต้องสมัคร",
 };
 
 // Atoms
@@ -186,41 +187,43 @@ export default async function LandingPage() {
   return (
     <div className="bg-white text-slate-900 font-sans">
       {/* Hero */}
-      <section className="px-6 md:px-12 pt-16 pb-24 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between text-xs text-slate-400 mb-8 font-medium">
-          <span>A field manual for shipping</span>
-        </div>
-
+      <section lang="th" className="px-6 md:px-12 pt-20 pb-24 max-w-6xl mx-auto">
         <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 lg:gap-16 items-center">
           {/* Left — copy + CTA */}
           <div>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.05]">
-              Project Task.
-              <br />
-              <span className="text-primary">Management.</span>
+            <h1 className="text-3xl sm:text-5xl xl:text-6xl font-bold leading-tight">
+              <span className="inline-block">ลาก Task ครั้งเดียว</span>{" "}
+              <span className="inline-block">ทั้งทีมเห็นพร้อมกัน</span>
             </h1>
 
-            <p className="mt-8 text-base md:text-lg text-slate-500 leading-relaxed max-w-md">
-              Turtask is a real-time Kanban workspace. Drag a card, watch it
-              travel. Tag a teammate, watch them respond. The board IS the
-              meeting — and the meeting is finally short.
+            <p className="mt-6 text-base md:text-lg text-slate-600 leading-relaxed max-w-lg">
+              Turtask คือ Kanban แบบ realtime สำหรับทีมเล็ก ขยับ Task
+              แล้วเพื่อนร่วมทีมเห็นทันทีโดยไม่ต้องรีเฟรช วางแผนใน Note
+              แล้วส่งขึ้น Board ได้ในคลิกเดียว และรวมงานของคุณจากทุกบอร์ดไว้ที่
+              My Work
             </p>
 
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 bg-primary text-white px-7 py-3.5 font-semibold text-sm hover:bg-primary-hover active:scale-95 shadow-sm rounded-full transition-colors"
-              >
-                Open Workspace
-                <ArrowRight size={16} />
-              </Link>
-              <TryDemoButton />
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 max-w-xl">
+              <div>
+                <TryDemoButton />
+                <p className="mt-3 text-sm text-slate-600 leading-relaxed">
+                  ไม่ต้องสมัครหรือกรอกอีเมล ได้บอร์ดตัวอย่างของคุณเองทันที
+                  และจะถูกลบอัตโนมัติใน 24 ชั่วโมง
+                </p>
+              </div>
+              <div>
+                <Link
+                  href="/dashboard"
+                  className="flex w-full sm:inline-flex sm:w-auto items-center justify-center gap-2 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 px-6 py-3 rounded-md font-semibold text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Open Workspace
+                  <ArrowRight size={16} />
+                </Link>
+                <p className="mt-3 text-sm text-slate-500 leading-relaxed">
+                  สำหรับผู้ที่มีบัญชีแล้ว เข้าสู่ระบบเพื่อเปิดงานของคุณ
+                </p>
+              </div>
             </div>
-
-            <p className="mt-4 text-xs text-slate-400">
-              โหมดทดลองเปิดบอร์ดตัวอย่างให้ทันที ไม่ต้องสมัครหรือกรอกอีเมล
-              บอร์ดเป็นของคุณคนเดียวและจะถูกลบอัตโนมัติใน 24 ชั่วโมง
-            </p>
           </div>
 
           {/* Right — task cards */}

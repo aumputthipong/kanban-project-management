@@ -12,12 +12,12 @@ type Variant = "hero" | "quiet";
 const SLOW_START_TOAST_DELAY_MS = 1500;
 
 const STYLES: Record<Variant, string> = {
-  hero: "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 px-7 py-3.5 rounded-full",
+  hero: "w-full sm:w-auto justify-center bg-primary text-white hover:bg-primary-hover shadow-sm px-6 py-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
   quiet:
     "w-full justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg",
 };
 
-// Secondary style on purpose: both hosts already have their one button-primary.
+// hero is the landing's one button-primary; quiet sits under the login form's own primary.
 export function TryDemoButton({
   variant = "hero",
   label = "Try demo",
