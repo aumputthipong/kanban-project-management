@@ -24,11 +24,11 @@ export function ToastContainer() {
   if (!isClient) return null;
 
   return createPortal(
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10000 flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-6 inset-x-4 z-10000 flex flex-col items-center gap-2 pointer-events-none">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="pointer-events-auto flex items-center gap-3 px-4 py-2.5 bg-slate-900 text-white rounded-lg shadow-lg text-sm animate-in fade-in slide-in-from-bottom-2"
+          className="pointer-events-auto max-w-md flex items-center gap-3 px-4 py-2.5 bg-slate-900 text-white rounded-lg shadow-lg text-sm animate-in fade-in slide-in-from-bottom-2"
         >
           <span>{t.message}</span>
           {t.actionLabel && t.onAction && (
@@ -37,14 +37,14 @@ export function ToastContainer() {
                 t.onAction?.();
                 dismiss(t.id);
               }}
-              className="px-2 py-0.5 text-blue-300 hover:text-blue-200 font-semibold uppercase text-xs tracking-wide cursor-pointer"
+              className="shrink-0 whitespace-nowrap px-2 py-0.5 text-blue-300 hover:text-blue-200 font-semibold uppercase text-xs tracking-wide cursor-pointer"
             >
               {t.actionLabel}
             </button>
           )}
           <button
             onClick={() => dismiss(t.id)}
-            className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="shrink-0 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <X size={14} />
           </button>

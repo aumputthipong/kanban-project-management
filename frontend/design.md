@@ -147,6 +147,8 @@ Form and field labels use `label-sm` in sentence case (`Assignee`, `Due date`) a
 
 Negative letter-spacing on h1 / h2 / h3 (`-0.02em`, `-0.01em`, `-0.01em`) tightens display type without making it feel cramped.
 
+**Thai script: IBM Plex Sans Thai (400 / 500 / 600 / 700).** Loaded as `--font-thai` and chained after the Latin face in `--font-sans`, so Thai glyphs render in it automatically while Latin stays on the primary face. Thai display type takes **no** negative letter-spacing and at least `leading-tight` (1.25) — tighter tracking or leading collides and clips the above-vowels and tone marks.
+
 ## Layout
 
 Layout uses a 4-pixel base scale. Cards sit on the board canvas with `md` padding; modals and panels use `lg`. Vertical rhythm between stacked elements defaults to `sm` inside a card, `md` between cards.
