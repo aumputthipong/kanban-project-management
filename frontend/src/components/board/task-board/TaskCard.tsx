@@ -92,8 +92,8 @@ export const TaskCard = memo(function TaskCard({
           isDragging
             ? "opacity-0 pointer-events-none"
             : card.is_done
-              ? "bg-emerald-50 border-emerald-200 shadow-sm cursor-grab hover:border-emerald-300"
-              : "bg-white border-slate-200 shadow-sm cursor-grab hover:shadow-md hover:border-blue-300"
+              ? "bg-emerald-50 border-emerald-200 shadow-sm cursor-pointer active:cursor-grabbing hover:border-emerald-300"
+              : "bg-white border-slate-200 shadow-sm cursor-pointer active:cursor-grabbing hover:shadow-md hover:border-blue-300"
         } ${isHighlighted ? "ring-2 ring-blue-400 border-blue-400 shadow-md" : "ring-0"}`}
       >
         <div className="flex items-start gap-3">
