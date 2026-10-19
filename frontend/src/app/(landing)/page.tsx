@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
 import { forwardedHeaders } from "@/lib/forwardedHeaders";
+import { ApiWarmup } from "@/components/demo/ApiWarmup";
 import { TryDemoButton } from "@/components/demo/TryDemoButton";
 import { LANDING_PATH, type UserSettings } from "@/types/userSettings";
 
@@ -205,6 +206,7 @@ export default async function LandingPage() {
 
             <div className="mt-10 grid gap-6 sm:grid-cols-2 max-w-xl">
               <div>
+                <ApiWarmup />
                 <TryDemoButton />
                 <p className="mt-3 text-sm text-slate-600 leading-relaxed">
                   ไม่ต้องสมัครหรือกรอกอีเมล ได้บอร์ดตัวอย่างของคุณเองทันที

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/constants";
 import { apiClient } from "@/lib/apiClient";
+import { ApiWarmup } from "@/components/demo/ApiWarmup";
 import { TryDemoButton } from "@/components/demo/TryDemoButton";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -149,6 +150,7 @@ function LoginForm() {
       </p>
 
       <div className="mt-6 pt-6 border-t border-slate-200">
+        <ApiWarmup />
         <TryDemoButton variant="quiet" label="Try demo" />
         <p className="text-center text-xs text-slate-500 mt-2">
           เข้าดูบอร์ดตัวอย่างโดยไม่ต้องสมัคร บอร์ดจะถูกลบใน 24 ชั่วโมง

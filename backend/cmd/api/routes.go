@@ -56,6 +56,8 @@ func setupRoutes(d routerDeps) http.Handler {
 
 	r.Get("/health", healthHandler(d.pool, d.version, d.startedAt))
 	r.Get("/healthz", healthHandler(d.pool, d.version, d.startedAt))
+	// Reachable through the frontend's /api rewrite; the landing page pings it to wake the API.
+	r.Get("/api/health", healthHandler(d.pool, d.version, d.startedAt))
 
 	// Unauthenticated — access is restricted at the network layer.
 	r.Handle("/metrics", observability.MetricsHandler())
