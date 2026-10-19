@@ -20,3 +20,6 @@ node_modules/
 
 #claudeconfig  ส่วนตัว 
 .claude/settings.local.json
+
+# Impeccable design tool state (critique snapshots, live config)
+.impeccable/
