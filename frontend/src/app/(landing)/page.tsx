@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/apiClient";
 import { forwardedHeaders } from "@/lib/forwardedHeaders";
 import { ApiWarmup } from "@/components/demo/ApiWarmup";
 import { TryDemoButton } from "@/components/demo/TryDemoButton";
+import { BoardBackground } from "@/components/board/task-board/BoardBackground";
 import { BoardPreview } from "@/components/landing/BoardPreview";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { WorkflowSteps } from "@/components/landing/WorkflowSteps";
@@ -38,9 +39,13 @@ export default async function LandingPage() {
 
   return (
     <div className="bg-white text-slate-900 font-sans">
-      <section lang="th" className="px-6 md:px-12 pt-6 pb-8 md:pb-12">
-        <div className="max-w-3xl mx-auto flex flex-col items-center">
-          <div className="w-full">
+      <section
+        lang="th"
+        className="relative overflow-hidden border-b border-slate-200 bg-slate-50 px-6 md:px-12 pt-6 pb-12 md:pb-16"
+      >
+        <BoardBackground />
+        <div className="relative max-w-3xl mx-auto flex flex-col items-center">
+          <div className="w-full rounded-2xl shadow-xl shadow-slate-900/5">
             <BoardPreview />
           </div>
 
