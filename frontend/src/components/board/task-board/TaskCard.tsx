@@ -75,7 +75,17 @@ export const TaskCard = memo(function TaskCard({
   } = useSortable({
     id: card.id,
     data: { currentColumnId: card.column_id },
+    attributes: { roleDescription: "การ์ด" },
   });
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    listeners?.onKeyDown?.(e);
+    if (isDragging || e.defaultPrevented) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      setIsDetailOpen(true);
+    }
+  };
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -90,8 +100,9 @@ export const TaskCard = memo(function TaskCard({
         style={style}
         {...listeners}
         {...attributes}
+        onKeyDown={onKeyDown}
         onClick={() => setIsDetailOpen(true)}
-        className={`group relative p-4 rounded-xl border flex flex-col gap-3 transition-all duration-300 select-none ${
+        className={`group relative p-4 rounded-xl border flex flex-col gap-3 transition-all duration-300 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
           isDragging
             ? "opacity-0 pointer-events-none"
             : card.is_done
