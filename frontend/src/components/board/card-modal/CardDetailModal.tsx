@@ -138,6 +138,7 @@ export function CardDetailModal({
                 onCommit={commitField}
                 error={error}
                 canEdit={canEdit}
+                isDone={card.is_done}
               />
             </div>
           </div>

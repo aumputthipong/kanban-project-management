@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { dateKey, formatRelativeDueDate, formatThaiDate } from "@/utils/date_helper";
+import { cardDueLabel, dateKey, formatRelativeDueDate, formatThaiDate } from "@/utils/date_helper";
 
 const NOW = new Date(2026, 9, 7, 15, 30);
 
@@ -67,5 +67,28 @@ describe("dateKey", () => {
 
   it("handles a leap day", () => {
     expect(dateKey(new Date(2028, 1, 29))).toBe("2028-02-29");
+  });
+});
+
+describe("cardDueLabel", () => {
+  it("flags an open card past its due date", () => {
+    expect(cardDueLabel(daysFromNow(-3), false)).toEqual({ text: "เลย 3 วัน", tone: "overdue" });
+  });
+
+  it("never marks a done card overdue", () => {
+    expect(cardDueLabel(daysFromNow(-3), true)?.tone).toBe("upcoming");
+  });
+
+  it("labels today in Thai", () => {
+    expect(cardDueLabel(daysFromNow(0), false)).toEqual({ text: "วันนี้", tone: "today" });
+  });
+
+  it("adds the year only outside the current year", () => {
+    expect(cardDueLabel(daysFromNow(5), false)?.text).not.toMatch(/\d{2}$/);
+    expect(cardDueLabel("2027-01-15", false)?.text).toMatch(/70$/);
+  });
+
+  it("returns null for an unparseable date", () => {
+    expect(cardDueLabel("not-a-date", false)).toBeNull();
   });
 });

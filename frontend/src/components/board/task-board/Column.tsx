@@ -26,7 +26,7 @@ import {
 import { useCanManageBoard } from "@/hooks/useBoardRole";
 import { UNASSIGNED_FILTER } from "@/store/useBoardStore";
 
-// DONE columns default to collapsed; the choice is saved per board + column.
+// DONE columns default to expanded; a collapse is saved per board + column.
 const collapseKey = (boardId: string, columnId: string) =>
   `turtask:col-collapsed:${boardId}:${columnId}`;
 
@@ -105,7 +105,7 @@ export const KanbanColumn = memo(function KanbanColumn({
 
   const isDone = category === "DONE";
   const [collapsed, setCollapsed] = useState(() =>
-    readCollapsed(boardId, id, isDone),
+    readCollapsed(boardId, id, false),
   );
   const setCollapsedPersisted = (next: boolean) => {
     setCollapsed(next);

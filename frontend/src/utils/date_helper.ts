@@ -84,3 +84,31 @@ export const formatRelativeDueDate = (dueDateStr: string): string => {
   if (diffDays <= 7) return `In ${diffDays} days`;
   return formatThaiDate(dueDateStr);
 };
+
+export function daysOverdue(dueDateStr: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDateStr);
+  due.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((today.getTime() - due.getTime()) / 86400000));
+}
+
+export type DueTone = "overdue" | "today" | "upcoming";
+
+/** Short Thai due label for a board card; a done card is never overdue. */
+export function cardDueLabel(dueDateStr: string, isDone: boolean): { text: string; tone: DueTone } | null {
+  const due = new Date(dueDateStr);
+  if (!isValidDate(due)) return null;
+  const late = daysOverdue(dueDateStr);
+  if (late > 0 && !isDone) return { text: `เลย ${late} วัน`, tone: "overdue" };
+  if (dateKey(due) === dateKey(new Date())) return { text: "วันนี้", tone: "today" };
+  const sameYear = due.getFullYear() === new Date().getFullYear();
+  return {
+    text: due.toLocaleDateString("th-TH", {
+      day: "numeric",
+      month: "short",
+      ...(sameYear ? {} : { year: "2-digit" }),
+    }),
+    tone: "upcoming",
+  };
+}

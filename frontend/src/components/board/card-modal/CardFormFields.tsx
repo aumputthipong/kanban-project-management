@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Clock } from "lucide-react";
+import { AlarmClock, Calendar, Clock } from "lucide-react";
 import type { BoardMember, Tag as TagType } from "@/types/board";
 import { FormState } from "./CardDetailModal";
 import { TagSelector } from "./TagSelector";
 import { AssigneeDropdown } from "./AssigneeDropdown";
-import { Dot, FieldLabel, PRIORITY_DOT, PRIORITY_LABEL } from "./modalParts";
-import { formatThaiDate } from "@/utils/date_helper";
+import { Dot, FieldLabel, MetaChip, PRIORITY_DOT, PRIORITY_LABEL } from "./modalParts";
+import { daysOverdue, formatThaiDate } from "@/utils/date_helper";
 import { QUICK_DATE_OPTIONS, QUICK_HOURS_OPTIONS } from "@/utils/quickSelect";
 import { getAvatarColor } from "@/utils/avatar";
 
@@ -21,6 +21,7 @@ interface CardFormFieldsProps {
   onCommit: (field: keyof FormState) => void;
   error: string | null;
   canEdit: boolean;
+  isDone: boolean;
 }
 
 const VALUE_BOX =
@@ -78,8 +79,9 @@ function QuickChips({ options, isActive, onPick }: {
   );
 }
 
-export function CardFormFields({ form, members, assigneeName, boardId, onChange, onTagsChange, onCommit, error, canEdit }: CardFormFieldsProps) {
+export function CardFormFields({ form, members, assigneeName, boardId, onChange, onTagsChange, onCommit, error, canEdit, isDone }: CardFormFieldsProps) {
   const [showQuickDates, setShowQuickDates] = useState(false);
+  const lateDays = !isDone && form.due_date ? daysOverdue(form.due_date) : 0;
   const [showQuickHours, setShowQuickHours] = useState(false);
 
   const set = (field: keyof FormState, value: string) => {
@@ -164,6 +166,14 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
           <span className="flex items-center gap-2 text-sm text-slate-900">
             <Calendar size={13} className="text-slate-600" />
             {formatThaiDate(form.due_date) || "—"}
+          </span>
+        )}
+        {lateDays > 0 && (
+          <span>
+            <MetaChip overdue>
+              <AlarmClock size={12} />
+              เลย {lateDays} วัน
+            </MetaChip>
           </span>
         )}
       </Field>

@@ -26,12 +26,24 @@ export const PRIORITY_LABEL: Record<string, string> = {
   low: "Low",
 };
 
-export function MetaChip({ children, strong = false }: { children: React.ReactNode; strong?: boolean }) {
+export function MetaChip({
+  children,
+  strong = false,
+  overdue = false,
+  title,
+}: {
+  children: React.ReactNode;
+  strong?: boolean;
+  overdue?: boolean;
+  title?: string;
+}) {
+  const tone = overdue
+    ? "border-red-200 bg-red-100 text-red-700 font-semibold"
+    : `border-slate-200 bg-white font-medium ${strong ? "text-slate-900" : "text-slate-600"}`;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full border border-slate-200 bg-white text-xs font-medium tracking-wide ${
-        strong ? "text-slate-900" : "text-slate-600"
-      }`}
+      title={title}
+      className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full border text-xs tracking-wide whitespace-nowrap ${tone}`}
     >
       {children}
     </span>
