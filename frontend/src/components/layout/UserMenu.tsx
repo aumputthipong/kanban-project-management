@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, Loader2, LogOut } from "lucide-react";
 import { API_URL } from "@/lib/constants";
 import { getAvatarColor } from "@/utils/avatar";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface UserMe {
   user_id: string;
@@ -52,6 +53,8 @@ export function UserMenu({ fallbackEmail }: UserMenuProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  useEscapeKey(open, () => setOpen(false));
+
   const displayName = me?.full_name?.trim() || fallbackEmail;
   const email = me?.email ?? fallbackEmail;
   const initial = displayName.charAt(0).toUpperCase();
@@ -59,52 +62,65 @@ export function UserMenu({ fallbackEmail }: UserMenuProps) {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await fetch(`${API_URL}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    router.push("/login");
-    router.refresh();
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setLoggingOut(false);
+    }
   };
 
   return (
     <div className="relative" ref={containerRef}>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
-        className="cursor-pointer flex items-center gap-2 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-1 transition-colors"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="cursor-pointer flex items-center gap-2 h-9 pl-1.5 pr-2 rounded-md hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
-        <div className={`w-7 h-7 rounded-full ${avatarColor} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+        <span className={`w-6 h-6 rounded-full grid place-items-center text-white text-xs font-semibold shrink-0 ${avatarColor}`}>
           {initial}
-        </div>
-        <span className="hidden md:inline text-sm font-medium text-slate-700 max-w-[180px] truncate">
+        </span>
+        <span className="hidden md:inline text-sm font-medium text-slate-900 max-w-45 truncate">
           {displayName}
         </span>
         <ChevronDown
           size={14}
-          className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <p className="text-sm font-semibold text-slate-800 truncate">
-              {displayName}
-            </p>
-            <p className="text-xs text-slate-500 truncate mt-0.5">{email}</p>
+        <div
+          role="menu"
+          className="absolute right-0 mt-1.5 w-64 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden z-50"
+        >
+          <div className="flex items-center gap-2.5 px-3 py-3 border-b border-slate-200">
+            <span className={`w-8 h-8 rounded-full grid place-items-center text-white text-sm font-semibold shrink-0 ${avatarColor}`}>
+              {initial}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-900 truncate">{displayName}</p>
+              <p className="text-xs text-slate-600 truncate">{email}</p>
+            </div>
           </div>
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="cursor-pointer w-full flex items-center gap-2 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
-          >
-            {loggingOut ? (
-              <Loader2 size={15} className="animate-spin" />
-            ) : (
-              <LogOut size={15} />
-            )}
-            Sign out
-          </button>
+          <div className="p-1">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="cursor-pointer w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-sm font-medium text-danger hover:bg-red-100 transition-colors disabled:opacity-50"
+            >
+              {loggingOut ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
+              Sign out
+            </button>
+          </div>
         </div>
       )}
     </div>
