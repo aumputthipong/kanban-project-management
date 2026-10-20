@@ -11,27 +11,33 @@ const CHIP =
 const CHIP_ON = "bg-surface-tint border-transparent text-primary";
 const CHIP_OFF = "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900";
 
+// Narrow panels use an even grid; the custom chip then takes a full row.
+const GRID = { 2: "grid grid-cols-2", 4: "grid grid-cols-4" } as const;
+type Columns = keyof typeof GRID;
+
 interface QuickPickProps {
   label: string;
   chips: { label: string; active: boolean; onClick: () => void }[];
   custom: { label: string; icon: React.ReactNode; active: boolean };
+  columns?: Columns;
   children: React.ReactNode;
 }
 
 /** Quick chips first; the exact-value input stays behind the last chip. */
-function QuickPick({ label, chips, custom, children }: QuickPickProps) {
+function QuickPick({ label, chips, custom, columns, children }: QuickPickProps) {
   const [open, setOpen] = useState(false);
+  const fill = columns ? "justify-center" : "";
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label={label}>
+      <div className={`${columns ? GRID[columns] : "flex flex-wrap"} gap-1.5`} role="group" aria-label={label}>
         {chips.map((c) => (
           <button
             key={c.label}
             type="button"
             aria-pressed={c.active}
             onClick={c.onClick}
-            className={`${CHIP} ${c.active ? CHIP_ON : CHIP_OFF}`}
+            className={`${CHIP} ${fill} ${c.active ? CHIP_ON : CHIP_OFF}`}
           >
             {c.label}
           </button>
@@ -40,7 +46,7 @@ function QuickPick({ label, chips, custom, children }: QuickPickProps) {
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className={`${CHIP} ${custom.active || open ? CHIP_ON : CHIP_OFF}`}
+          className={`${CHIP} ${columns ? "col-span-full justify-center" : ""} ${custom.active || open ? CHIP_ON : CHIP_OFF}`}
         >
           {custom.icon}
           {custom.label}
@@ -51,13 +57,14 @@ function QuickPick({ label, chips, custom, children }: QuickPickProps) {
   );
 }
 
-export function DueDatePick({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export function DueDatePick({ value, onChange, columns }: { value: string; onChange: (value: string) => void; columns?: Columns }) {
   const quick = QUICK_DATE_OPTIONS.map((o) => ({ ...o, value: isoDateFromToday(o.days) }));
   const isQuick = quick.some((o) => o.value === value);
 
   return (
     <QuickPick
       label="Due date"
+      columns={columns}
       chips={quick.map((o) => ({
         label: o.label,
         active: value === o.value,
@@ -86,15 +93,17 @@ interface HoursPickProps {
   onPick: (value: string) => void;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onInputBlur: () => void;
+  columns?: Columns;
 }
 
-export function HoursPick({ value, onPick, onInputChange, onInputBlur }: HoursPickProps) {
+export function HoursPick({ value, onPick, onInputChange, onInputBlur, columns }: HoursPickProps) {
   const hasValue = value !== "" && Number(value) > 0;
   const isQuick = QUICK_HOURS_OPTIONS.some((o) => o.value === value);
 
   return (
     <QuickPick
       label="Est. hours"
+      columns={columns}
       chips={QUICK_HOURS_OPTIONS.map((o) => ({
         label: o.label,
         active: value === o.value,

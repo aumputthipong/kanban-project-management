@@ -136,7 +136,7 @@ function TagSelectorImpl({ boardId, selected, onChange, onCommit, canEdit }: Tag
     return (
       <div className="flex flex-wrap gap-1">
         {selected.length === 0 ? (
-          <span className="text-xs text-slate-400">—</span>
+          <span className="text-sm text-slate-900">—</span>
         ) : (
           selected.map((tag) => <TagChip key={tag.id} tag={tag} />)
         )}
