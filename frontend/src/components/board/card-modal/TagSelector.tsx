@@ -188,7 +188,7 @@ function TagSelectorImpl({ boardId, selected, onChange, onCommit, canEdit }: Tag
       {/* Color picker when creating */}
       {creating && (
         <div className="px-3 py-2 flex flex-col gap-2 border-t border-slate-100">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pick color</p>
+          <p className="text-xs font-medium text-slate-600">Pick color</p>
           <div className="flex flex-wrap gap-1.5">
             {TAG_COLORS.map(({ key, hex }) => (
               <button
@@ -199,8 +199,8 @@ function TagSelectorImpl({ boardId, selected, onChange, onCommit, canEdit }: Tag
                 className="w-5 h-5 rounded-full border-2 transition-transform hover:scale-110"
                 style={{
                   backgroundColor: hex,
-                  borderColor: newColor === key ? "#1e293b" : "transparent",
-                  outline: newColor === key ? "2px solid #1e293b" : "none",
+                  borderColor: newColor === key ? "#0f172a" : "transparent",
+                  outline: newColor === key ? "2px solid #0f172a" : "none",
                   outlineOffset: "2px",
                 }}
               />

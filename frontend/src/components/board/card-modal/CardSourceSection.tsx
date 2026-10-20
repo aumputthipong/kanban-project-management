@@ -38,7 +38,7 @@ function CardSourceSectionImpl({ cardId, boardId }: Props) {
 
   return (
     <section className="rounded-lg border border-slate-200 bg-slate-50/40 p-3">
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+      <p className="mb-2 text-xs font-medium text-slate-600">
         ที่มา
       </p>
 
@@ -65,7 +65,7 @@ function CardSourceSectionImpl({ cardId, boardId }: Props) {
 
       {pending_questions.length > 0 && (
         <div className="mt-3 rounded-md border border-amber-200 bg-amber-50/60 p-2.5">
-          <p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+          <p className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-amber-800">
             <HelpCircle size={12} />
             คำถามค้างใน session นี้ ({pending_questions.length})
           </p>

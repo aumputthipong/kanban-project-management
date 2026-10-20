@@ -6,7 +6,17 @@ import type { BoardMember, Tag as TagType } from "@/types/board";
 import { FormState } from "./CardDetailModal";
 import { TagSelector } from "./TagSelector";
 import { AssigneeDropdown } from "./AssigneeDropdown";
-import { Dot, FieldLabel, MetaChip, PRIORITY_DOT, PRIORITY_LABEL } from "./modalParts";
+import {
+  Dot,
+  FIELD_INPUT,
+  FieldLabel,
+  MetaChip,
+  PRIORITY_DOT,
+  PRIORITY_LABEL,
+  PRIORITY_OPTIONS,
+  QuickChips,
+  SegmentedControl,
+} from "./modalParts";
 import { daysOverdue, formatThaiDate } from "@/utils/date_helper";
 import { QUICK_DATE_OPTIONS, QUICK_HOURS_OPTIONS } from "@/utils/quickSelect";
 import { getAvatarColor } from "@/utils/avatar";
@@ -24,8 +34,7 @@ interface CardFormFieldsProps {
   isDone: boolean;
 }
 
-const VALUE_BOX =
-  "flex-1 min-w-0 px-2.5 py-2 text-sm text-slate-900 bg-white border border-slate-200 rounded-md hover:bg-slate-50 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint transition-colors";
+const VALUE_BOX = `flex-1 min-w-0 ${FIELD_INPUT}`;
 
 function localISODate(offsetDays: number): string {
   const d = new Date();
@@ -51,31 +60,6 @@ function QuickToggle({ onClick }: { onClick: () => void }) {
     >
       Quick
     </button>
-  );
-}
-
-function QuickChips({ options, isActive, onPick }: {
-  options: readonly { label: string }[];
-  isActive: (i: number) => boolean;
-  onPick: (i: number) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((o, i) => (
-        <button
-          key={o.label}
-          type="button"
-          onClick={() => onPick(i)}
-          className={`h-6 px-2.5 text-xs font-medium tracking-wide rounded-full border transition-colors ${
-            isActive(i)
-              ? "bg-surface-tint border-transparent text-primary"
-              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -108,24 +92,12 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
 
       <Field label="Priority">
         {canEdit ? (
-          <div className="flex rounded-md border border-slate-200 overflow-hidden" role="group" aria-label="Priority">
-            {(["low", "medium", "high"] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                aria-pressed={form.priority === p}
-                onClick={() => set("priority", p)}
-                className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 text-xs border-r border-slate-200 last:border-r-0 transition-colors ${
-                  form.priority === p
-                    ? "bg-surface-tint text-slate-900 font-semibold"
-                    : "text-slate-600 font-medium hover:bg-slate-50"
-                }`}
-              >
-                <Dot className={PRIORITY_DOT[p]} />
-                {PRIORITY_LABEL[p]}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            label="Priority"
+            options={PRIORITY_OPTIONS}
+            value={form.priority}
+            onChange={(p) => set("priority", p)}
+          />
         ) : (
           <span className="flex items-center gap-2 text-sm text-slate-900">
             {form.priority ? (

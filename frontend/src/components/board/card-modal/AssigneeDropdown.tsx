@@ -172,7 +172,7 @@ function MemberRow({
           <span className="truncate text-slate-700 font-medium">{m.full_name}</span>
           {isMe && <MeBadge />}
         </span>
-        <span className="block truncate text-[11px] text-slate-400">{m.email}</span>
+        <span className="block truncate text-xs text-slate-500">{m.email}</span>
       </span>
       {selected && <Check size={14} className="shrink-0 text-primary" />}
     </Row>
@@ -181,8 +181,8 @@ function MemberRow({
 
 function MeBadge() {
   return (
-    <span className="shrink-0 text-[10px] font-semibold leading-none px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
-      ฉัน
+    <span className="shrink-0 text-xs font-medium leading-none px-1.5 py-0.5 rounded-full bg-surface-tint text-primary">
+      Me
     </span>
   );
 }

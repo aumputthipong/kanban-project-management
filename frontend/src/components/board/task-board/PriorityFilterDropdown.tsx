@@ -11,11 +11,11 @@ const PRIORITY_CONFIG: {
   label: string;
   bars: number;
   color: string;
-  dimColor: string;
 }[] = [
-  { value: "high",   label: "High",   bars: 3, color: "#ef4444", dimColor: "#fca5a5" },
-  { value: "medium", label: "Medium", bars: 2, color: "#f59e0b", dimColor: "#fcd34d" },
-  { value: "low",    label: "Low",    bars: 1, color: "#3b82f6", dimColor: "#93c5fd" },
+  // design.md priority.* tokens
+  { value: "high",   label: "High",   bars: 3, color: "#dc2626" },
+  { value: "medium", label: "Medium", bars: 2, color: "#f59e0b" },
+  { value: "low",    label: "Low",    bars: 1, color: "#10b981" },
 ];
 
 // Signal bars icon

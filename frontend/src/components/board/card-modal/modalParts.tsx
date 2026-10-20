@@ -26,6 +26,53 @@ export const PRIORITY_LABEL: Record<string, string> = {
   low: "Low",
 };
 
+export const FIELD_BOX =
+  "px-2.5 py-2 text-slate-900 placeholder-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-50 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint transition-colors";
+
+export const FIELD_INPUT = `${FIELD_BOX} text-sm`;
+
+export function SegmentedControl<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; content: React.ReactNode }[];
+  value: string | null;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex rounded-md border border-slate-200 overflow-hidden" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 text-xs border-r border-slate-200 last:border-r-0 transition-colors ${
+            value === o.value
+              ? "bg-surface-tint text-slate-900 font-semibold"
+              : "text-slate-600 font-medium hover:bg-slate-50"
+          }`}
+        >
+          {o.content}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export const PRIORITY_OPTIONS = (["low", "medium", "high"] as const).map((p) => ({
+  value: p,
+  content: (
+    <>
+      <Dot className={PRIORITY_DOT[p]} />
+      {PRIORITY_LABEL[p]}
+    </>
+  ),
+}));
+
 export function MetaChip({
   children,
   strong = false,
@@ -114,5 +161,30 @@ export function SubtaskCheckbox({
     >
       <Check size={11} strokeWidth={3.2} />
     </button>
+  );
+}
+
+export function QuickChips({ options, isActive, onPick }: {
+  options: readonly { label: string }[];
+  isActive: (i: number) => boolean;
+  onPick: (i: number) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((o, i) => (
+        <button
+          key={o.label}
+          type="button"
+          onClick={() => onPick(i)}
+          className={`h-6 px-2.5 text-xs font-medium tracking-wide rounded-full border transition-colors ${
+            isActive(i)
+              ? "bg-surface-tint border-transparent text-primary"
+              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
