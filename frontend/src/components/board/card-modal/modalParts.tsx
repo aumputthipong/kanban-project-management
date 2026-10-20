@@ -176,28 +176,3 @@ export function SubtaskCheckbox({
     </button>
   );
 }
-
-export function QuickChips({ options, isActive, onPick }: {
-  options: readonly { label: string }[];
-  isActive: (i: number) => boolean;
-  onPick: (i: number) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((o, i) => (
-        <button
-          key={o.label}
-          type="button"
-          onClick={() => onPick(i)}
-          className={`h-6 px-2.5 text-xs font-medium tracking-wide rounded-full border transition-colors ${
-            isActive(i)
-              ? "bg-surface-tint border-transparent text-primary"
-              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}

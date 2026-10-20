@@ -102,13 +102,24 @@ export function cardDueLabel(dueDateStr: string, isDone: boolean): { text: strin
   const late = daysOverdue(dueDateStr);
   if (late > 0 && !isDone) return { text: `เลย ${late} วัน`, tone: "overdue" };
   if (dateKey(due) === dateKey(new Date())) return { text: "วันนี้", tone: "today" };
-  const sameYear = due.getFullYear() === new Date().getFullYear();
-  return {
-    text: due.toLocaleDateString("th-TH", {
-      day: "numeric",
-      month: "short",
-      ...(sameYear ? {} : { year: "2-digit" }),
-    }),
-    tone: "upcoming",
-  };
+  return { text: formatThaiShortDate(dueDateStr), tone: "upcoming" };
+}
+
+/** "16 ก.ย." — the year is added only outside the current year. */
+export function formatThaiShortDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (!isValidDate(d)) return "";
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    ...(sameYear ? {} : { year: "2-digit" }),
+  });
+}
+
+/** Local YYYY-MM-DD for today plus `offsetDays`. */
+export function isoDateFromToday(offsetDays: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return dateKey(d);
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { AlarmClock, Calendar, Clock } from "lucide-react";
 import type { BoardMember, Tag as TagType } from "@/types/board";
 import { FormState } from "./CardDetailModal";
@@ -9,17 +8,15 @@ import { AssigneeDropdown } from "./AssigneeDropdown";
 import {
   ClearFieldButton,
   Dot,
-  FIELD_INPUT,
   FieldLabel,
   MetaChip,
   PRIORITY_DOT,
   PRIORITY_LABEL,
   PRIORITY_OPTIONS,
-  QuickChips,
   SegmentedControl,
 } from "./modalParts";
 import { daysOverdue, formatThaiDate } from "@/utils/date_helper";
-import { QUICK_DATE_OPTIONS, QUICK_HOURS_OPTIONS } from "@/utils/quickSelect";
+import { DueDatePick, HoursPick } from "./QuickPick";
 import { getAvatarColor } from "@/utils/avatar";
 
 interface CardFormFieldsProps {
@@ -35,14 +32,6 @@ interface CardFormFieldsProps {
   isDone: boolean;
 }
 
-const VALUE_BOX = `flex-1 min-w-0 ${FIELD_INPUT}`;
-
-function localISODate(offsetDays: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
-}
-
 function Field({ label, action, children }: { label: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.75">
@@ -55,22 +44,9 @@ function Field({ label, action, children }: { label: string; action?: React.Reac
   );
 }
 
-function QuickToggle({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="shrink-0 px-2 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 hover:text-slate-900 transition-colors"
-    >
-      Quick
-    </button>
-  );
-}
-
 export function CardFormFields({ form, members, assigneeName, boardId, onChange, onTagsChange, onCommit, error, canEdit, isDone }: CardFormFieldsProps) {
-  const [showQuickDates, setShowQuickDates] = useState(false);
+  const hasHours = Number(form.estimated_hours) > 0;
   const lateDays = !isDone && form.due_date ? daysOverdue(form.due_date) : 0;
-  const [showQuickHours, setShowQuickHours] = useState(false);
 
   const set = (field: keyof FormState, value: string) => {
     onChange(field)({ target: { value } } as React.ChangeEvent<HTMLInputElement>);
@@ -119,28 +95,7 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
         action={canEdit && form.due_date ? <ClearFieldButton field="due date" onClick={() => set("due_date", "")} /> : null}
       >
         {canEdit ? (
-          <>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="date"
-                aria-label="Due date"
-                value={form.due_date}
-                onChange={(e) => {
-                  onChange("due_date")(e);
-                  onCommit("due_date");
-                }}
-                className={VALUE_BOX}
-              />
-              <QuickToggle onClick={() => setShowQuickDates((v) => !v)} />
-            </div>
-            {showQuickDates && (
-              <QuickChips
-                options={QUICK_DATE_OPTIONS}
-                isActive={(i) => form.due_date === localISODate(QUICK_DATE_OPTIONS[i].days)}
-                onPick={(i) => set("due_date", localISODate(QUICK_DATE_OPTIONS[i].days))}
-              />
-            )}
-          </>
+          <DueDatePick value={form.due_date} onChange={(v) => set("due_date", v)} />
         ) : (
           <span className="flex items-center gap-2 text-sm text-slate-900">
             <Calendar size={13} className="text-slate-600" />
@@ -157,35 +112,21 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
         )}
       </Field>
 
-      <Field label="Est. hours">
+      <Field
+        label="Est. hours"
+        action={canEdit && hasHours ? <ClearFieldButton field="estimate" onClick={() => set("estimated_hours", "")} /> : null}
+      >
         {canEdit ? (
-          <>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="number"
-                aria-label="Est. hours"
-                min="0"
-                step="0.5"
-                value={form.estimated_hours}
-                onChange={onChange("estimated_hours")}
-                onBlur={() => onCommit("estimated_hours")}
-                placeholder="0"
-                className={VALUE_BOX}
-              />
-              <QuickToggle onClick={() => setShowQuickHours((v) => !v)} />
-            </div>
-            {showQuickHours && (
-              <QuickChips
-                options={QUICK_HOURS_OPTIONS}
-                isActive={(i) => form.estimated_hours === QUICK_HOURS_OPTIONS[i].value}
-                onPick={(i) => set("estimated_hours", QUICK_HOURS_OPTIONS[i].value)}
-              />
-            )}
-          </>
+          <HoursPick
+            value={form.estimated_hours}
+            onPick={(v) => set("estimated_hours", v)}
+            onInputChange={onChange("estimated_hours")}
+            onInputBlur={() => onCommit("estimated_hours")}
+          />
         ) : (
           <span className="flex items-center gap-2 text-sm text-slate-900">
             <Clock size={13} className="text-slate-600" />
-            {form.estimated_hours ? `${form.estimated_hours} ชม.` : "—"}
+            {hasHours ? `${form.estimated_hours} ชม.` : "—"}
           </span>
         )}
       </Field>

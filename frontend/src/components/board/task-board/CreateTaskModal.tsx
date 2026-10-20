@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useBoardStore } from "@/store/useBoardStore";
-import { QUICK_DATE_OPTIONS } from "@/utils/quickSelect";
 import {
   BUTTON_OUTLINE,
   BUTTON_PRIMARY,
@@ -16,11 +15,11 @@ import {
   FIELD_INPUT,
   FieldLabel,
   PRIORITY_OPTIONS,
-  QuickChips,
   SegmentedControl,
 } from "@/components/board/card-modal/modalParts";
 import { AssigneeChips } from "./AssigneeChips";
 import { SubtaskDraftList } from "./SubtaskDraftList";
+import { DueDatePick } from "@/components/board/card-modal/QuickPick";
 
 interface Props {
   onClose: () => void;
@@ -36,12 +35,6 @@ interface Props {
     },
   ) => void;
   defaultColumnId?: string;
-}
-
-function offsetDate(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
 }
 
 function Field({ label, action, children }: { label: string; action?: React.ReactNode; children: React.ReactNode }) {
@@ -125,23 +118,7 @@ export function CreateTaskModal({ onClose, onCreate, defaultColumnId }: Props) {
             label="Due date"
             action={dueDate ? <ClearFieldButton field="due date" onClick={() => setDueDate("")} /> : null}
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <QuickChips
-                options={QUICK_DATE_OPTIONS}
-                isActive={(i) => dueDate === offsetDate(QUICK_DATE_OPTIONS[i].days)}
-                onPick={(i) => {
-                  const value = offsetDate(QUICK_DATE_OPTIONS[i].days);
-                  setDueDate((d) => (d === value ? "" : value));
-                }}
-              />
-              <input
-                type="date"
-                aria-label="Due date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className={FIELD_INPUT}
-              />
-            </div>
+            <DueDatePick value={dueDate} onChange={setDueDate} />
           </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
