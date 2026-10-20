@@ -70,11 +70,11 @@ export function TryDemoButton({
     const abort = new AbortController();
     timers.current = [
       setTimeout(
-        () => replaceStatusToast("กำลังเตรียมบอร์ดตัวอย่าง ถ้า server เพิ่งตื่นอาจใช้เวลาถึง 1 นาที"),
+        () => replaceStatusToast("กำลังเตรียมบอร์ดตัวอย่าง ถ้า server เพิ่งตื่นอาจใช้เวลาประมาณ 10-20 วินาที"),
         SLOW_START_TOAST_DELAY_MS,
       ),
       setTimeout(
-        () => replaceStatusToast("ยังทำงานอยู่ server กำลังตื่น โดยปกติไม่เกิน 1 นาที"),
+        () => replaceStatusToast("ยังทำงานอยู่ server กำลังตื่น อีกไม่กี่วินาที"),
         STILL_WAKING_TOAST_DELAY_MS,
       ),
       setTimeout(() => abort.abort(), DEMO_TIMEOUT_MS),
