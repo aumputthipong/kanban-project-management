@@ -55,7 +55,7 @@ export function TagFilterDropdown({ boardId }: TagFilterDropdownProps) {
         <TagIcon size={13} />
         <span>Tags</span>
         {isActive && (
-          <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] font-bold leading-none">
+          <span className="flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-surface-tint text-primary text-xs font-semibold leading-none">
             {activeCount}
           </span>
         )}

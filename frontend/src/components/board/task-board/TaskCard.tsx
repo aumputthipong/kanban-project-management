@@ -107,8 +107,8 @@ export const TaskCard = memo(function TaskCard({
             ? "opacity-0 pointer-events-none"
             : card.is_done
               ? "bg-emerald-50 border-emerald-200 shadow-sm cursor-pointer active:cursor-grabbing hover:border-emerald-300"
-              : "bg-white border-slate-200 shadow-sm cursor-pointer active:cursor-grabbing hover:shadow-md hover:border-blue-300"
-        } ${isHighlighted ? "ring-2 ring-blue-400 border-blue-400 shadow-md" : "ring-0"}`}
+              : "bg-white border-slate-200 shadow-sm cursor-pointer active:cursor-grabbing hover:shadow-md hover:border-slate-300"
+        } ${isHighlighted ? "ring-2 ring-primary border-primary shadow-md" : "ring-0"}`}
       >
         <div className="flex items-start gap-3">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -149,8 +149,8 @@ export const TaskCard = memo(function TaskCard({
               <div
                 className={`h-1 rounded-full transition-all duration-300 ${
                   completedSubtasks === totalSubtasks
-                    ? "bg-emerald-500"
-                    : "bg-blue-400"
+                    ? "bg-emerald-700"
+                    : "bg-blue-700"
                 }`}
                 style={{
                   width: `${Math.round((completedSubtasks / totalSubtasks) * 100)}%`,

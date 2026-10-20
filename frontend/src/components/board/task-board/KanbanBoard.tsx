@@ -29,9 +29,9 @@ import {
 
 function DragPreview({ card }: { card: Card }) {
   return (
-    <div className="p-4 rounded-xl border bg-white border-blue-400 shadow-2xl ring-2 ring-blue-500 rotate-2 opacity-95 w-72 cursor-grabbing">
+    <div className="p-4 rounded-xl border bg-white border-primary shadow-2xl ring-2 ring-primary/30 rotate-2 opacity-95 w-72 cursor-grabbing">
       {card.priority && <PriorityBadge priority={card.priority} />}
-      <p className="text-sm font-semibold text-slate-700 leading-snug">
+      <p className="mt-2 text-sm font-semibold text-slate-900 leading-snug">
         {card.title}
       </p>
     </div>

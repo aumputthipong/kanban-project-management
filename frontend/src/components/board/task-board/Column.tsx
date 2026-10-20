@@ -78,7 +78,7 @@ interface ColumnProps {
 }
 
 const DropIndicator = () => (
-  <div className="h-0.5 bg-blue-400 rounded-full mx-1 my-0.5" />
+  <div className="h-0.5 bg-primary rounded-full mx-1 my-0.5" />
 );
 
 export const KanbanColumn = memo(function KanbanColumn({
@@ -168,7 +168,7 @@ export const KanbanColumn = memo(function KanbanColumn({
               {cards.length}
             </span>
             <span
-              className="mt-3 rotate-180 text-[13px] font-bold text-slate-600"
+              className="mt-3 rotate-180 text-sm font-semibold text-slate-600"
               style={{ writingMode: "vertical-rl" }}
             >
               {title}
@@ -179,7 +179,7 @@ export const KanbanColumn = memo(function KanbanColumn({
           </button>
           {isOver && (
             <span
-              className="pointer-events-none absolute inset-0 flex rotate-180 items-center justify-center text-[11px] font-bold"
+              className="pointer-events-none absolute inset-0 flex rotate-180 items-center justify-center text-xs font-semibold"
               style={{ writingMode: "vertical-rl", color: barColor }}
             >
               วางเพื่อปิดงาน
