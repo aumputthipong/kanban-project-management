@@ -92,7 +92,7 @@ export function AssigneeDropdown({ members, value, onSelect }: AssigneeDropdownP
         ) : (
           <>
             <span className="w-6 h-6 rounded-full border border-dashed border-slate-300 shrink-0" />
-            <span className="truncate text-slate-400">Unassigned</span>
+            <span className="truncate text-slate-600">Unassigned</span>
           </>
         )}
         <ChevronDown size={14} className="ml-auto shrink-0 text-slate-400" />

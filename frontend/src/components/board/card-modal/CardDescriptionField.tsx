@@ -30,7 +30,7 @@ function CardDescriptionFieldImpl({
           onChange={onChange}
           onBlur={() => onCommit("description")}
           placeholder="เพิ่มรายละเอียดงาน…"
-          className="mt-2 block w-full px-2.5 py-2 text-sm leading-relaxed text-slate-600 bg-transparent border border-transparent rounded-md resize-none hover:border-slate-200 focus:outline-none focus:text-slate-900 focus:border-primary focus:ring-3 focus:ring-surface-tint transition-colors placeholder:text-slate-400"
+          className="mt-2 block w-full px-2.5 py-2 text-sm leading-relaxed text-slate-600 bg-transparent border border-transparent rounded-md resize-none hover:border-slate-200 focus:outline-none focus:text-slate-900 focus:border-primary focus:ring-3 focus:ring-surface-tint transition-colors placeholder:text-slate-500"
         />
       ) : (
         <p className="mt-2 text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">

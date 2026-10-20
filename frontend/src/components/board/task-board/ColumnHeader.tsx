@@ -40,7 +40,7 @@ export function ColumnHeader({ title, barColor, isDone, total, shown, onAdd, onC
             <ChevronsRight size={16} />
           </button>
         ) : (
-          <button onClick={onAdd} title="Add card" className={ICON_BUTTON}>
+          <button onClick={onAdd} title="Add task" aria-label="Add task" className={ICON_BUTTON}>
             <Plus size={16} />
           </button>
         )}

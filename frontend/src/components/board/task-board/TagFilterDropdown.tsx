@@ -76,8 +76,8 @@ export function TagFilterDropdown({ boardId }: TagFilterDropdownProps) {
       {open && (
         <div className="absolute top-9 left-0 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 overflow-hidden">
           {tags.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-slate-400 italic">
-              No tags on this board
+            <p className="px-3 py-2 text-xs text-slate-600">
+              Board นี้ยังไม่มี Tag
             </p>
           ) : (
             <div className="max-h-64 overflow-y-auto">
@@ -128,7 +128,7 @@ export function TagFilterDropdown({ boardId }: TagFilterDropdownProps) {
                   clearFilterTags();
                   setOpen(false);
                 }}
-                className="cursor-pointer flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                className="cursor-pointer flex items-center gap-2 w-full px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
               >
                 Clear filter
               </button>

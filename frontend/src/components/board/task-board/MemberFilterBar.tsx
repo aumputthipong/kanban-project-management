@@ -71,7 +71,7 @@ export function MemberFilterBar() {
           onClick={() =>
             setFilterAssigneeId(isMineActive ? null : currentUserId)
           }
-          title="Show only my cards (M)"
+          title="Show only my tasks (M)"
           className={`cursor-pointer flex items-center gap-2 pl-1 pr-3 h-8 rounded-full border text-xs font-semibold transition-all
             ${
               isMineActive

@@ -143,7 +143,7 @@ export function PriorityFilterDropdown() {
               <div className="my-1 border-t border-slate-100" />
               <button
                 onClick={() => { clearFilterPriorities(); setOpen(false); }}
-                className="cursor-pointer flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                className="cursor-pointer flex items-center gap-2 w-full px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
               >
                 Clear filter
               </button>

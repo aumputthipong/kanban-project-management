@@ -218,7 +218,7 @@ function TagSelectorImpl({ boardId, selected, onChange, onCommit, canEdit }: Tag
       )}
 
       {filtered.length === 0 && !query.trim() && !creating && (
-        <p className="px-3 py-2 text-xs text-slate-400">No tags yet</p>
+        <p className="px-3 py-2 text-xs text-slate-600">ยังไม่มี Tag พิมพ์ชื่อเพื่อสร้างใหม่</p>
       )}
     </div>
   ) : null;
