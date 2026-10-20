@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDown, Crown, Link2, Plus, Users } from "lucide-react";
-import { PriorityBadge } from "@/components/board/task-board/PriorityBadge";
+import { Dot, PRIORITY_DOT, PRIORITY_LABEL } from "@/components/board/card-modal/modalParts";
 import { getAvatarColor } from "@/utils/avatar";
 import { MEMBER, OWNER } from "./demoBoard";
 
@@ -44,11 +44,16 @@ export function MoveArt() {
           <ArrowDown size={12} /> Drop here
         </span>
       </div>
-      <div className="mx-3 flex -rotate-3 flex-col gap-1.5 self-start rounded-lg border border-slate-200 bg-white p-2.5 shadow-lg">
-        <PriorityBadge priority="high" />
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-slate-700">Build auth service</span>
-          <Avatar name={OWNER} />
+      <div className="mx-3 flex -rotate-3 flex-col gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-lg">
+        <span className="text-sm font-medium text-slate-900">Build auth service</span>
+        <div className="flex items-center gap-3 text-xs font-medium text-slate-900">
+          <span className="inline-flex items-center gap-1.5">
+            <Dot className={PRIORITY_DOT.high} />
+            {PRIORITY_LABEL.high}
+          </span>
+          <span className="ml-auto">
+            <Avatar name={OWNER} />
+          </span>
         </div>
       </div>
     </div>

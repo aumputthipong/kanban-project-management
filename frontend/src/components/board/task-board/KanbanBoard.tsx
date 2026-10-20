@@ -20,7 +20,7 @@ import { useBoardStore } from "@/store/useBoardStore";
 import { useBoardActions } from "@/hooks/useBoardActions";
 import type { Card } from "@/types/board";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { PriorityBadge } from "./PriorityBadge";
+import { CardMetaRow } from "./TaskCardParts";
 import {
   BOARD_KEYBOARD_CODES,
   BOARD_SCREEN_READER_INSTRUCTIONS,
@@ -29,11 +29,9 @@ import {
 
 function DragPreview({ card }: { card: Card }) {
   return (
-    <div className="p-4 rounded-xl border bg-white border-primary shadow-2xl ring-2 ring-primary/30 rotate-2 opacity-95 w-72 cursor-grabbing">
-      {card.priority && <PriorityBadge priority={card.priority} />}
-      <p className="mt-2 text-sm font-semibold text-slate-900 leading-snug">
-        {card.title}
-      </p>
+    <div className="flex flex-col gap-2 w-67 px-3 py-2.5 rounded-lg border bg-white border-primary shadow-lg ring-2 ring-primary/30 rotate-2 cursor-grabbing">
+      <p className="text-sm font-medium leading-snug text-slate-900 line-clamp-2">{card.title}</p>
+      <CardMetaRow card={card} />
     </div>
   );
 }
