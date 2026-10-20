@@ -2,41 +2,48 @@
 
 import { ArrowDown, Calendar, CircleCheck, MoreHorizontal, Plus, UserRound } from "lucide-react";
 import { BoardBackground } from "@/components/board/task-board/BoardBackground";
-import { PriorityBadge } from "@/components/board/task-board/PriorityBadge";
+import { Dot, PRIORITY_DOT, PRIORITY_LABEL } from "@/components/board/card-modal/modalParts";
 import { getAvatarColor } from "@/utils/avatar";
-import { formatThaiDate } from "@/utils/date_helper";
+import { cardDueLabel } from "@/utils/date_helper";
 import { PreviewHeader, PreviewToolbar } from "./BoardPreviewChrome";
 import { DEMO_COLUMNS, type DemoTask } from "./demoBoard";
 
 const DROP_TARGET = "In Progress";
 
-function dueLabel(days: number | null): string {
-  if (days === null) return "-";
-  return formatThaiDate(new Date(Date.now() + days * 86_400_000).toISOString());
+function dueLabel(days: number, done: boolean): string {
+  return cardDueLabel(new Date(Date.now() + days * 86_400_000).toISOString(), done)?.text ?? "";
 }
 
 function TaskCard({ task, done }: { task: DemoTask; done: boolean }) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-2.5 flex flex-col gap-1.5">
-      <PriorityBadge priority={task.priority} />
-      <p className="flex items-start gap-1.5 text-sm font-semibold leading-snug text-slate-700">
-        {done && <CircleCheck size={14} className="mt-0.5 shrink-0 text-emerald-600" />}
+    <div className={`rounded-lg border px-2.5 py-2 flex flex-col gap-1.5 ${done ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-200"}`}>
+      <p className={`flex items-start gap-1.5 text-sm font-medium leading-snug ${done ? "text-emerald-900" : "text-slate-900"}`}>
+        {done && <CircleCheck size={14} className="mt-0.5 shrink-0 text-emerald-700" />}
         {task.title}
       </p>
-      <div className="flex items-center justify-between gap-2">
-        <span className="hidden sm:flex items-center gap-1 whitespace-nowrap text-xs text-slate-500" suppressHydrationWarning>
-          <Calendar size={12} />
-          {dueLabel(task.dueInDays)}
-        </span>
+      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">
+        {task.dueInDays !== null && (
+          <span className="hidden sm:inline-flex items-center gap-1" suppressHydrationWarning>
+            <Calendar size={12} />
+            {dueLabel(task.dueInDays, done)}
+          </span>
+        )}
+        {task.dueInDays !== null && !done && <span aria-hidden className="hidden sm:inline text-slate-300">·</span>}
+        {!done && (
+          <span className="inline-flex items-center gap-1.5 text-slate-900">
+            <Dot className={PRIORITY_DOT[task.priority]} />
+            {PRIORITY_LABEL[task.priority]}
+          </span>
+        )}
         {task.assignee ? (
           <span
-            className={`ml-auto grid size-5 shrink-0 place-items-center rounded-full text-xs font-bold text-white ${getAvatarColor(task.assignee)}`}
+            className={`ml-auto grid w-4.5 h-4.5 shrink-0 place-items-center rounded-full text-xs font-semibold text-white ${getAvatarColor(task.assignee)}`}
           >
             {task.assignee.charAt(0)}
           </span>
         ) : (
-          <span className="ml-auto grid size-5 shrink-0 place-items-center rounded-full border-2 border-dashed border-slate-300">
-            <UserRound size={10} className="text-slate-300" />
+          <span className="ml-auto grid w-4.5 h-4.5 shrink-0 place-items-center rounded-full border border-dashed border-slate-400">
+            <UserRound size={10} className="text-slate-500" />
           </span>
         )}
       </div>
