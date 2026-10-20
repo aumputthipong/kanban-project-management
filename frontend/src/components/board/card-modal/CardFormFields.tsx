@@ -98,7 +98,7 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
         action={canEdit && form.due_date ? <ClearFieldButton field="due date" onClick={() => set("due_date", "")} /> : null}
       >
         {canEdit ? (
-          <DueDatePick value={form.due_date} onChange={(v) => set("due_date", v)} />
+          <DueDatePick columns={2} value={form.due_date} onChange={(v) => set("due_date", v)} />
         ) : (
           <span className="flex items-center gap-2 text-sm text-slate-900">
             <Calendar size={13} className="text-slate-600" />
@@ -121,6 +121,7 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
       >
         {canEdit ? (
           <HoursPick
+            columns={4}
             value={form.estimated_hours}
             onPick={(v) => set("estimated_hours", v)}
             onInputChange={onChange("estimated_hours")}
