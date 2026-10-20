@@ -80,7 +80,7 @@ export function MemberFilterBar() {
             }`}
         >
           <span
-            className={`flex items-center justify-center w-6 h-6 rounded-full text-white text-[11px] font-bold ${myColor}`}
+            className={`flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold ${myColor}`}
           >
             {myInitial}
           </span>
@@ -131,7 +131,7 @@ export function MemberFilterBar() {
               key={member.user_id}
               onClick={() => toggle(member.user_id)}
               title={member.full_name}
-              className={`cursor-pointer relative flex items-center justify-center w-7 h-7 rounded-full text-white text-[11px] font-bold transition-all duration-200
+              className={`cursor-pointer relative flex items-center justify-center w-7 h-7 rounded-full text-white text-xs font-bold transition-all duration-200
                 ${color}
                 ${isActive ? "ring-2 ring-offset-1 ring-blue-500 scale-110 z-10 shadow-md" : "hover:scale-105 hover:z-10"}
                 ${isMuted ? "opacity-30 grayscale hover:opacity-80" : "opacity-100"}
@@ -147,7 +147,7 @@ export function MemberFilterBar() {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen((prev) => !prev)}
-              className={`flex items-center justify-center gap-0.5 h-7 px-2 rounded-full text-[10px] font-bold border transition-all cursor-pointer
+              className={`flex items-center justify-center gap-0.5 h-7 px-2 rounded-full text-xs font-bold border transition-all cursor-pointer
     ${
       isDropdownOpen
         ? "bg-slate-800 text-white border-slate-800"
@@ -192,7 +192,7 @@ export function MemberFilterBar() {
                       `}
                     >
                       <span
-                        className={`flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold ${color}`}
+                        className={`flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold ${color}`}
                       >
                         {initial}
                       </span>

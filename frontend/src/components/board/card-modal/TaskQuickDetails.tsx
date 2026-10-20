@@ -96,7 +96,7 @@ export function TaskQuickDetails({ summary, detail, loading, onToggleSubtask }: 
           <Skeleton className="h-4.5 w-28" />
         ) : assignee ? (
           <span className="inline-flex items-center gap-2 min-w-0">
-            <span className="w-4.5 h-4.5 rounded-full grid place-items-center bg-surface-tint text-primary text-[10px] font-semibold shrink-0">
+            <span className="w-4.5 h-4.5 rounded-full grid place-items-center bg-surface-tint text-primary text-xs font-semibold shrink-0">
               {(Array.from(assignee.trim())[0] ?? "?").toUpperCase()}
             </span>
             <span className="truncate text-slate-900">{assignee}</span>

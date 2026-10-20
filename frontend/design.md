@@ -97,7 +97,7 @@ components:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.on-surface}"
     rounded: "{rounded.lg}"
-    padding: 16px
+    padding: 10px 12px
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
@@ -158,11 +158,11 @@ Negative letter-spacing on h1 / h2 / h3 (`-0.02em`, `-0.01em`, `-0.01em`) tighte
 
 ## Layout
 
-Layout uses a 4-pixel base scale. Cards sit on the board canvas with `md` padding; modals and panels use `lg`. Vertical rhythm between stacked elements defaults to `sm` inside a card, `md` between cards.
+Layout uses a 4-pixel base scale. Board cards are compact (10px × 12px padding, `sm` between cards in a column); modals and panels use `lg`. Vertical rhythm between stacked elements defaults to `sm` inside a card.
 
 - **`{spacing.xs}` (4px):** Chip inner padding, icon offsets.
-- **`{spacing.sm}` (8px):** Tight stacks — card title to metadata, label to input.
-- **`{spacing.md}` (16px):** Card content padding, gap between cards in a column.
+- **`{spacing.sm}` (8px):** Tight stacks — card title to metadata, label to input, gap between cards in a column.
+- **`{spacing.md}` (16px):** Panel and popover content padding.
 - **`{spacing.lg}` (24px):** Board canvas padding, modal padding, gap between columns.
 - **`{spacing.xl}` (32px):** Top-level page padding, section separation.
 
@@ -188,7 +188,7 @@ larger surfaces step up, chips step down. Larger surface ⇒ larger radius.
 ## Components
 
 - **board:** Full-bleed canvas, `background` surface with `on-surface` ink, `lg` padding. Hosts the column list horizontally.
-- **card:** White `surface` with `on-surface` ink, `lg` rounded, `md` padding. The atomic unit of work — title, optional description, assignee, due date, tags.
+- **card:** Compact board card. White `surface`, 1px `slate-200` border and no shadow (hover darkens the border), `lg` rounded, 10px × 12px padding. Order: title (`body-md` size step down to 14px, 500, two lines max), tags as `tag-dot` + name text, a `progress-h` subtask bar, then **one meta line** of plain `label-sm` text joined by `·` — due (`state-overdue-fg` bold "เลย N วัน" when late), priority with its `priority.*` disc, estimate — and an `avatar-sm` at the end. No chips inside the card. Done cards keep a light emerald tint (`emerald-50`, border `emerald-200`) with a check icon before the title.
 - **button-primary:** `primary` indigo with `on-primary` text, `md` rounded, `md` padding. Used once per view max for the dominant action.
 - **button-secondary:** `secondary` slate with `on-primary` text, `md` rounded, `md` padding. For "Cancel", "Back", non-destructive secondary flows.
 - **tag-success:** `success` green chip with `on-primary` text. Marks "Done" status, completed milestones.

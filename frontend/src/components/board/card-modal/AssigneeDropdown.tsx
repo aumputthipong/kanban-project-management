@@ -22,7 +22,7 @@ function Avatar({ userId, name, size }: { userId: string; name: string; size: 5 
   const dim = size === 6 ? "w-6 h-6" : "w-5 h-5";
   return (
     <div
-      className={`${dim} rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 ${getAvatarColor(userId)}`}
+      className={`${dim} rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${getAvatarColor(userId)}`}
     >
       {initial(name)}
     </div>

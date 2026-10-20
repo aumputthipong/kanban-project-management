@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { Link2, Copy, Check, RefreshCw, X, Loader2 } from "lucide-react";
+import { Copy, Check, RefreshCw, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { inviteApi, type InviteLink } from "@/lib/inviteApi";
 import { useToastStore } from "@/store/useToastStore";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { BUTTON_PRIMARY, ModalHeader, ModalShell } from "@/components/ui/Modal";
+import { FIELD_INPUT } from "@/components/board/card-modal/modalParts";
 
 export function InviteLinkModal({
   boardId,
@@ -21,8 +21,6 @@ export function InviteLinkModal({
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  useEscapeKey(true, onClose);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,86 +75,58 @@ export function InviteLinkModal({
       })
     : "";
 
-  return createPortal(
-    <>
-      <div className="fixed inset-0 z-9998 bg-slate-900/45" onClick={onClose} />
-      <div className="fixed inset-0 z-9999 flex items-center justify-center px-4 pointer-events-none">
-        <div
-          className="pointer-events-auto w-full max-w-md rounded-2xl bg-white shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 pt-5 pb-4">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-primary">
-                <Link2 size={16} />
-              </span>
-              <h2 className="text-sm font-bold text-slate-800">Invite Link</h2>
+  return (
+    <ModalShell label="Invite link" onClose={onClose} className="max-w-md">
+      <ModalHeader title="Invite link" onClose={onClose} />
+
+      <div className="px-6 py-5">
+        <p className="mb-3 text-sm text-slate-600">
+          ใครมีลิงก์นี้และล็อกอินอยู่ จะเข้าร่วม Project เป็นสมาชิกได้
+        </p>
+
+        {loading ? (
+          <Skeleton className="h-10 rounded-md" />
+        ) : failed ? (
+          <button
+            type="button"
+            onClick={regenerate}
+            disabled={busy}
+            className="inline-flex h-10 items-center gap-2 text-sm font-medium text-slate-600 hover:text-primary disabled:opacity-50"
+          >
+            {busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={15} />}
+            โหลดลิงก์ไม่สำเร็จ · ลองใหม่
+          </button>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <input
+                readOnly
+                aria-label="Invite link"
+                value={fullUrl}
+                onFocus={(e) => e.currentTarget.select()}
+                className={`min-w-0 flex-1 ${FIELD_INPUT} text-slate-600`}
+              />
+              <button type="button" onClick={copy} className={`shrink-0 ${BUTTON_PRIMARY}`}>
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? "Copied" : "Copy"}
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              aria-label="ปิด"
-              className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="px-5 py-5">
-            <p className="mb-3 text-[13px] text-slate-500">
-              ใครมีลิงก์นี้และล็อกอินอยู่ จะเข้าร่วม Project เป็นสมาชิกได้
-            </p>
-
-            {loading ? (
-              <Skeleton className="h-11 rounded-md" />
-            ) : failed ? (
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 text-xs text-slate-600">
+              <span>ลิงก์หมดอายุ {expiryLabel}</span>
+              <span aria-hidden>·</span>
               <button
                 type="button"
                 onClick={regenerate}
                 disabled={busy}
-                className="inline-flex h-11 items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary disabled:opacity-50"
+                className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-primary disabled:opacity-50"
               >
-                {busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={15} />}
-                โหลดลิงก์ไม่สำเร็จ · ลองใหม่
+                {busy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                New link
               </button>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <input
-                    readOnly
-                    value={fullUrl}
-                    onFocus={(e) => e.currentTarget.select()}
-                    className="h-11 min-w-0 flex-1 rounded-md border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-600 outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={copy}
-                    className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-md bg-blue-800 px-4 text-sm font-bold text-white transition hover:bg-blue-900"
-                  >
-                    {copied ? <Check size={16} /> : <Copy size={16} />}
-                    {copied ? "คัดลอกแล้ว" : "คัดลอก"}
-                  </button>
-                </div>
-                <p className="mt-3 flex flex-wrap items-center gap-x-2 text-[11.5px] text-slate-400">
-                  <span>ลิงก์หมดอายุ {expiryLabel}</span>
-                  <span aria-hidden>·</span>
-                  <button
-                    type="button"
-                    onClick={regenerate}
-                    disabled={busy}
-                    className="inline-flex items-center gap-1 font-semibold text-slate-500 hover:text-primary disabled:opacity-50"
-                  >
-                    {busy ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
-                    สร้างลิงก์ใหม่
-                  </button>
-                </p>
-              </>
-            )}
-          </div>
-        </div>
+            </p>
+          </>
+        )}
       </div>
-    </>,
-    document.body,
+    </ModalShell>
   );
 }
