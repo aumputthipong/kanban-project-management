@@ -28,21 +28,22 @@ export function ModalShell({ label, onClose, className = "max-w-lg", children }:
   useEscapeKey(true, onClose);
 
   return createPortal(
-    <>
+    // One fixed layer per dialog, so a nested confirm's backdrop also covers the modal under it.
+    <div
+      className="fixed inset-0 z-9999 flex items-center justify-center px-4 py-6"
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* No backdrop-blur: it costs a GPU composite every frame. */}
-      <div className="fixed inset-0 z-9998 bg-slate-900/45" onClick={onClose} />
-      <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none px-4 py-6">
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={label}
-          className={`pointer-events-auto w-full max-h-full flex flex-col overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-2xl ${className}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {children}
-        </div>
+      <div className="absolute inset-0 bg-slate-900/45" onClick={onClose} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        className={`relative w-full max-h-full flex flex-col overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-2xl ${className}`}
+      >
+        {children}
       </div>
-    </>,
+    </div>,
     document.body,
   );
 }
