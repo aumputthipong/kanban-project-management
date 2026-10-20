@@ -7,6 +7,7 @@ import { FormState } from "./CardDetailModal";
 import { TagSelector } from "./TagSelector";
 import { AssigneeDropdown } from "./AssigneeDropdown";
 import {
+  ClearFieldButton,
   Dot,
   FIELD_INPUT,
   FieldLabel,
@@ -42,10 +43,13 @@ function localISODate(offsetDays: number): string {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, action, children }: { label: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.75">
-      <FieldLabel>{label}</FieldLabel>
+      <div className="flex items-center justify-between gap-2">
+        <FieldLabel>{label}</FieldLabel>
+        {action}
+      </div>
       {children}
     </div>
   );
@@ -110,7 +114,10 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
         )}
       </Field>
 
-      <Field label="Due date">
+      <Field
+        label="Due date"
+        action={canEdit && form.due_date ? <ClearFieldButton field="due date" onClick={() => set("due_date", "")} /> : null}
+      >
         {canEdit ? (
           <>
             <div className="flex items-center gap-1.5">

@@ -11,6 +11,7 @@ import {
   ModalShell,
 } from "@/components/ui/Modal";
 import {
+  ClearFieldButton,
   FIELD_BOX,
   FIELD_INPUT,
   FieldLabel,
@@ -43,10 +44,13 @@ function offsetDate(days: number): string {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, action, children }: { label: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <FieldLabel>{label}</FieldLabel>
+      <div className="flex items-center justify-between gap-2">
+        <FieldLabel>{label}</FieldLabel>
+        {action}
+      </div>
       {children}
     </div>
   );
@@ -117,7 +121,10 @@ export function CreateTaskModal({ onClose, onCreate, defaultColumnId }: Props) {
             />
           </Field>
 
-          <Field label="Due date">
+          <Field
+            label="Due date"
+            action={dueDate ? <ClearFieldButton field="due date" onClick={() => setDueDate("")} /> : null}
+          >
             <div className="flex flex-wrap items-center gap-2">
               <QuickChips
                 options={QUICK_DATE_OPTIONS}

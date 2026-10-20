@@ -10,6 +10,19 @@ export function FieldLabel({ children, className = "" }: { children: React.React
   );
 }
 
+export function ClearFieldButton({ field, onClick }: { field: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Clear ${field}`}
+      className="text-xs font-medium text-slate-600 hover:text-danger rounded-sm transition-colors"
+    >
+      Clear
+    </button>
+  );
+}
+
 export function Dot({ className }: { className: string }) {
   return <span aria-hidden className={`inline-block w-1.25 h-1.25 rounded-full shrink-0 ${className}`} />;
 }
