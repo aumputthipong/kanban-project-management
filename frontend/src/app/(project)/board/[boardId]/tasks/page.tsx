@@ -4,13 +4,16 @@ import { use, useEffect, useState } from "react";
 import { KanbanBoard } from "@/components/board/task-board/KanbanBoard";
 import { useCardHighlightStore } from "@/store/useCardHighlightStore";
 import { useBoardActions } from "@/hooks/useBoardActions";
-import { Plus } from "lucide-react";
-import { MemberFilterBar } from "@/components/board/task-board/MemberFilterBar";
+import { Plus, X } from "lucide-react";
+import { AssigneeFilterDropdown, MyTasksToggle } from "@/components/board/task-board/AssigneeFilter";
 import { PriorityFilterDropdown } from "@/components/board/task-board/PriorityFilterDropdown";
 import { TagFilterDropdown } from "@/components/board/task-board/TagFilterDropdown";
 import { CreateTaskModal } from "@/components/board/task-board/CreateTaskModal";
 import { ColumnOptionsModal } from "@/components/board/task-board/ColumnOptionsModal";
 import { useCanManageBoard } from "@/hooks/useBoardRole";
+import { useBoardStore } from "@/store/useBoardStore";
+import { hasBoardFilters } from "@/lib/boardFilters";
+import { BUTTON_OUTLINE, BUTTON_PRIMARY } from "@/components/ui/Modal";
 
 interface PageProps {
   params: Promise<{ boardId: string }>;
@@ -26,10 +29,7 @@ function AddColumnButton({
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-primary transition-colors shadow-sm"
-      >
+      <button type="button" onClick={() => setOpen(true)} className={`cursor-pointer bg-white ${BUTTON_OUTLINE}`}>
         <Plus size={14} /> Add column
       </button>
       {open && (
@@ -48,29 +48,53 @@ function AddColumnButton({
   );
 }
 
+function ClearFiltersButton() {
+  const filterAssigneeId = useBoardStore((s) => s.filterAssigneeId);
+  const filterPriorities = useBoardStore((s) => s.filterPriorities);
+  const filterTagIds = useBoardStore((s) => s.filterTagIds);
+  const setFilterAssigneeId = useBoardStore((s) => s.setFilterAssigneeId);
+  const clearFilterPriorities = useBoardStore((s) => s.clearFilterPriorities);
+  const clearFilterTags = useBoardStore((s) => s.clearFilterTags);
+
+  if (!hasBoardFilters({ assigneeId: filterAssigneeId, priorities: filterPriorities, tagIds: filterTagIds })) {
+    return null;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setFilterAssigneeId(null);
+        clearFilterPriorities();
+        clearFilterTags();
+      }}
+      className="cursor-pointer inline-flex items-center gap-1 h-8 px-2 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+    >
+      <X size={13} /> Clear filters
+    </button>
+  );
+}
+
 function BoardToolbar({ boardId }: { boardId: string }) {
   const { handleAddColumn, handleAddCard } = useBoardActions(boardId);
   const canManage = useCanManageBoard();
   const [creating, setCreating] = useState(false);
 
   return (
-    <div className="-mx-8 flex items-center gap-3 px-8 h-14 bg-slate-50 border-b border-slate-200 mb-6">
-      <MemberFilterBar />
-      <div className="w-px h-5 bg-slate-300 mx-1" />
-      <PriorityFilterDropdown />
-      <TagFilterDropdown boardId={boardId} />
-      {canManage && (
-        <>
-          <div className="w-px h-5 bg-slate-300 mx-1" />
-          <AddColumnButton onAdd={handleAddColumn} />
-        </>
-      )}
-      <button
-        onClick={() => setCreating(true)}
-        className="ml-auto cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
-      >
-        <Plus size={15} /> New Task
-      </button>
+    <div className="-mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-2.5 mb-6 flex flex-wrap items-center gap-2 min-h-14 bg-slate-50 border-b border-slate-200">
+      <div role="group" aria-label="Filters" className="flex flex-wrap items-center gap-2">
+        <MyTasksToggle />
+        <AssigneeFilterDropdown />
+        <PriorityFilterDropdown />
+        <TagFilterDropdown boardId={boardId} />
+        <ClearFiltersButton />
+      </div>
+      <div className="ml-auto flex items-center gap-2">
+        {canManage && <AddColumnButton onAdd={handleAddColumn} />}
+        <button type="button" onClick={() => setCreating(true)} className={`cursor-pointer ${BUTTON_PRIMARY}`}>
+          <Plus size={15} /> New Task
+        </button>
+      </div>
       {creating && (
         <CreateTaskModal
           onClose={() => setCreating(false)}
