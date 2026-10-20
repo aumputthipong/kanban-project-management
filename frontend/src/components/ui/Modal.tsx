@@ -10,6 +10,9 @@ export const BUTTON_PRIMARY =
 export const BUTTON_OUTLINE =
   "inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-md border border-slate-200 text-slate-900 hover:bg-slate-50 transition-colors";
 
+export const BUTTON_DANGER =
+  "inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-md bg-danger text-white hover:bg-danger-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
+
 export const BUTTON_DANGER_TEXT =
   "inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-md text-danger hover:bg-red-100 disabled:text-slate-400 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors";
 

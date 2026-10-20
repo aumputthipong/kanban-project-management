@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { BUTTON_DANGER, BUTTON_OUTLINE, BUTTON_PRIMARY, ModalShell } from "@/components/ui/Modal";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -30,56 +30,27 @@ export function ConfirmDialog({
     if (open) confirmRef.current?.focus();
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onCancel]);
-
   if (!open) return null;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-9999 flex items-center justify-center"
-      onClick={onCancel}
-    >
-      <div className="absolute inset-0 bg-black/40" />
-
-      <div
-        className="relative z-10 w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex flex-col gap-1">
-          <h2 className="text-base font-semibold text-slate-800">{title}</h2>
-          {description && (
-            <p className="text-sm text-slate-500">{description}</p>
-          )}
-        </div>
-
-        <div className="flex gap-2 justify-end">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            ref={confirmRef}
-            onClick={onConfirm}
-            className={`px-4 py-2 text-sm rounded-lg font-medium text-white transition-colors ${
-              destructive
-                ? "bg-danger hover:bg-danger-hover"
-                : "bg-primary hover:bg-primary-hover"
-            }`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+  return (
+    <ModalShell label={title} onClose={onCancel} className="max-w-sm">
+      <div className="flex flex-col gap-1.5 px-6 pt-5 pb-4">
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        {description && <p className="text-sm text-slate-600">{description}</p>}
       </div>
-    </div>,
-    document.body
+      <div className="flex justify-end gap-2 px-6 pb-5">
+        <button type="button" onClick={onCancel} className={BUTTON_OUTLINE}>
+          {cancelLabel}
+        </button>
+        <button
+          ref={confirmRef}
+          type="button"
+          onClick={onConfirm}
+          className={destructive ? BUTTON_DANGER : BUTTON_PRIMARY}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </ModalShell>
   );
 }

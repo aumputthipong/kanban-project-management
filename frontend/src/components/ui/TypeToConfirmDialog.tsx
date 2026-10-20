@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface TypeToConfirmDialogProps {
   open: boolean;
@@ -46,14 +47,7 @@ export function TypeToConfirmDialog({
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onCancel]);
+  useEscapeKey(open, onCancel);
 
   if (!open) return null;
 
@@ -65,7 +59,7 @@ export function TypeToConfirmDialog({
       className="fixed inset-0 z-9999 flex items-center justify-center"
       onClick={loading ? undefined : onCancel}
     >
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-slate-900/45" />
 
       <div
         className="relative z-10 w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-4"
