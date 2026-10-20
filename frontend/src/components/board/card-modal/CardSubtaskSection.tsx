@@ -40,6 +40,8 @@ function CardSubtaskSectionImpl({
     setNewSubtaskTitle("");
   };
 
+  if (!canEdit && list.length === 0) return null;
+
   return (
     <div>
       <SubtaskProgress done={completed} total={list.length} showPercent />
