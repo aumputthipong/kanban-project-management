@@ -122,7 +122,10 @@ export function CreateTaskModal({ onClose, onCreate, defaultColumnId }: Props) {
           </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Priority">
+            <Field
+              label="Priority"
+              action={priority ? <ClearFieldButton field="priority" onClick={() => setPriority(null)} /> : null}
+            >
               <SegmentedControl
                 label="Priority"
                 options={PRIORITY_OPTIONS}

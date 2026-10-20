@@ -70,13 +70,16 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
         )}
       </Field>
 
-      <Field label="Priority">
+      <Field
+        label="Priority"
+        action={canEdit && form.priority ? <ClearFieldButton field="priority" onClick={() => set("priority", "")} /> : null}
+      >
         {canEdit ? (
           <SegmentedControl
             label="Priority"
             options={PRIORITY_OPTIONS}
             value={form.priority}
-            onChange={(p) => set("priority", p)}
+            onChange={(p) => set("priority", form.priority === p ? "" : p)}
           />
         ) : (
           <span className="flex items-center gap-2 text-sm text-slate-900">
