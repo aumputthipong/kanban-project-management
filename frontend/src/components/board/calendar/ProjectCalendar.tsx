@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   format,
   addMonths,
@@ -13,9 +13,7 @@ import {
   isSameDay,
   addDays,
 } from "date-fns";
-import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
-import { X } from "lucide-react";
 import { useBoardStore, UNASSIGNED_FILTER } from "@/store/useBoardStore";
 import { useBoardActions } from "@/hooks/useBoardActions";
 import { useCanEdit } from "@/hooks/useCanEdit";
@@ -24,6 +22,7 @@ import { CalendarHeader } from "./CalendarHeader";
 import { CalendarFilters } from "./CalendarFilters";
 import { TaskPill } from "./TaskPill";
 import { CalendarTaskModal } from "./CalendarTaskModal";
+import { DayDetailModal } from "./DayDetailModal";
 import { classifyPillState, type PillState } from "./pillState";
 
 const CardDetailModal = dynamic(
@@ -281,64 +280,5 @@ function EditCardModal({
       onAddSubtask={handleAddSubtask}
       canEdit={canEdit}
     />
-  );
-}
-
-function DayDetailModal({
-  date,
-  cards,
-  onSelect,
-  onClose,
-}: {
-  date: Date;
-  cards: Card[];
-  onSelect: (card: Card) => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-40 flex items-start justify-center bg-slate-900/40 p-8"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={ref}
-        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
-      >
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-900">
-            {format(date, "EEEE, d MMMM yyyy")}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        <p className="mb-4 text-xs text-slate-500">
-          {cards.length} task{cards.length === 1 ? "" : "s"}
-        </p>
-        <div className="flex flex-col gap-1.5">
-          {cards.map((card) => (
-            <TaskPill key={card.id} card={card} onSelect={onSelect} inPopover />
-          ))}
-        </div>
-      </div>
-    </div>,
-    document.body,
   );
 }
