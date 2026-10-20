@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
@@ -18,13 +19,19 @@ import { KanbanColumn } from "@/components/board/task-board/Column";
 import { useBoardStore } from "@/store/useBoardStore";
 import { useBoardActions } from "@/hooks/useBoardActions";
 import type { Card } from "@/types/board";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { PriorityBadge } from "./PriorityBadge";
+import {
+  BOARD_KEYBOARD_CODES,
+  BOARD_SCREEN_READER_INSTRUCTIONS,
+  boardAnnouncements,
+} from "./boardDndA11y";
 
 function DragPreview({ card }: { card: Card }) {
   return (
-    <div className="p-4 rounded-xl border bg-white border-blue-400 shadow-2xl ring-2 ring-blue-500 rotate-2 opacity-95 w-72 cursor-grabbing">
+    <div className="p-4 rounded-xl border bg-white border-primary shadow-2xl ring-2 ring-primary/30 rotate-2 opacity-95 w-72 cursor-grabbing">
       {card.priority && <PriorityBadge priority={card.priority} />}
-      <p className="text-sm font-semibold text-slate-700 leading-snug">
+      <p className="mt-2 text-sm font-semibold text-slate-900 leading-snug">
         {card.title}
       </p>
     </div>
@@ -57,6 +64,10 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: BOARD_KEYBOARD_CODES,
+    }),
   );
 
   // pointerWithin first so an empty column beats a neighbouring card in a dense one.
@@ -146,6 +157,11 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
     setActiveCard(null);
   };
 
+  const onDragCancel = () => {
+    setDropTarget(null);
+    setActiveCard(null);
+  };
+
   const columnProps = useCallback(
     (col: (typeof columns)[0]) => ({
       id: col.id,
@@ -186,6 +202,11 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
+      onDragCancel={onDragCancel}
+      accessibility={{
+        announcements: boardAnnouncements,
+        screenReaderInstructions: BOARD_SCREEN_READER_INSTRUCTIONS,
+      }}
     >
       <div className="board-scroll flex gap-6 items-stretch min-h-full snap-x snap-mandatory">
         {todoColumns.map((col) => (

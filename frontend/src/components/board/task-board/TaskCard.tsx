@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import {
+  AlarmClock,
   Calendar,
   Check,
   Clock,
@@ -24,10 +25,11 @@ const CardDetailModal = dynamic(
 import { useBoardActions } from "@/hooks/useBoardActions";
 import { useCanEdit } from "@/hooks/useCanEdit";
 import { CSS } from "@dnd-kit/utilities";
-import { formatThaiDate } from "@/utils/date_helper";
+import { cardDueLabel, formatThaiDate } from "@/utils/date_helper";
 import { getAvatarColor } from "@/utils/avatar";
 import { PriorityBadge } from "@/components/board/task-board/PriorityBadge";
 import { TagChip } from "@/components/board/task-board/TagChip";
+import { MetaChip } from "@/components/board/card-modal/modalParts";
 
 interface CardProps {
   card: Card;
@@ -61,6 +63,7 @@ export const TaskCard = memo(function TaskCard({
 
   const totalSubtasks = card.total_subtasks ?? 0;
   const completedSubtasks = card.completed_subtasks ?? 0;
+  const due = card.due_date ? cardDueLabel(card.due_date, card.is_done) : null;
 
   const {
     attributes,
@@ -72,7 +75,17 @@ export const TaskCard = memo(function TaskCard({
   } = useSortable({
     id: card.id,
     data: { currentColumnId: card.column_id },
+    attributes: { roleDescription: "การ์ด" },
   });
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    listeners?.onKeyDown?.(e);
+    if (isDragging || e.defaultPrevented) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      setIsDetailOpen(true);
+    }
+  };
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -87,36 +100,30 @@ export const TaskCard = memo(function TaskCard({
         style={style}
         {...listeners}
         {...attributes}
+        onKeyDown={onKeyDown}
         onClick={() => setIsDetailOpen(true)}
-        className={`group relative p-4 rounded-xl border flex flex-col gap-3 transition-all duration-300 select-none ${
+        className={`group relative p-4 rounded-xl border flex flex-col gap-3 transition-all duration-300 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
           isDragging
             ? "opacity-0 pointer-events-none"
             : card.is_done
               ? "bg-emerald-50 border-emerald-200 shadow-sm cursor-pointer active:cursor-grabbing hover:border-emerald-300"
-              : "bg-white border-slate-200 shadow-sm cursor-pointer active:cursor-grabbing hover:shadow-md hover:border-blue-300"
-        } ${isHighlighted ? "ring-2 ring-blue-400 border-blue-400 shadow-md" : "ring-0"}`}
+              : "bg-white border-slate-200 shadow-sm cursor-pointer active:cursor-grabbing hover:shadow-md hover:border-slate-300"
+        } ${isHighlighted ? "ring-2 ring-primary border-primary shadow-md" : "ring-0"}`}
       >
         <div className="flex items-start gap-3">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            {(card.priority && !card.is_done) || (card.tags && card.tags.length > 0) ? (
+            {card.tags && card.tags.length > 0 && (
               <div className="flex flex-wrap items-center gap-1">
-                {card.priority && !card.is_done && (
-                  <PriorityBadge priority={card.priority} />
-                )}
-                {card.tags && card.tags.length > 0 && (
-                  <>
-                    {card.tags.slice(0, 3).map((tag) => (
-                      <TagChip key={tag.id} tag={tag} />
-                    ))}
-                    {card.tags.length > 3 && (
-                      <span className="text-[10px] text-slate-400 font-semibold">
-                        +{card.tags.length - 3}
-                      </span>
-                    )}
-                  </>
+                {card.tags.slice(0, 3).map((tag) => (
+                  <TagChip key={tag.id} tag={tag} />
+                ))}
+                {card.tags.length > 3 && (
+                  <span className="text-xs font-medium text-slate-500">
+                    +{card.tags.length - 3}
+                  </span>
                 )}
               </div>
-            ) : null}
+            )}
 
             {/* Done = check icon, never strikethrough (design.md) */}
             <div className="flex items-start gap-1.5">
@@ -127,7 +134,7 @@ export const TaskCard = memo(function TaskCard({
               )}
               <p
                 className={`text-sm font-semibold leading-snug transition-all line-clamp-2 ${
-                  card.is_done ? "text-emerald-900" : "text-slate-700"
+                  card.is_done ? "text-emerald-900" : "text-slate-900"
                 }`}
               >
                 {card.title}
@@ -137,13 +144,13 @@ export const TaskCard = memo(function TaskCard({
         </div>
 
         {totalSubtasks > 0 && (
-          <div className="flex items-center gap-2 pl-2">
+          <div className="flex items-center gap-2">
             <div className="flex-1 bg-slate-100 rounded-full h-1 overflow-hidden">
               <div
                 className={`h-1 rounded-full transition-all duration-300 ${
                   completedSubtasks === totalSubtasks
-                    ? "bg-emerald-500"
-                    : "bg-blue-400"
+                    ? "bg-emerald-700"
+                    : "bg-blue-700"
                 }`}
                 style={{
                   width: `${Math.round((completedSubtasks / totalSubtasks) * 100)}%`,
@@ -151,10 +158,10 @@ export const TaskCard = memo(function TaskCard({
               />
             </div>
             <span
-              className={`text-[10px] font-semibold ${
+              className={`text-xs font-medium tabular-nums ${
                 completedSubtasks === totalSubtasks
-                  ? "text-emerald-500"
-                  : "text-slate-400"
+                  ? "text-emerald-700"
+                  : "text-slate-500"
               }`}
             >
               {completedSubtasks}/{totalSubtasks}
@@ -163,17 +170,27 @@ export const TaskCard = memo(function TaskCard({
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pl-2 pt-1">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[10px] text-slate-400">
-              <Calendar size={10} />
-              {card.due_date ? formatThaiDate(card.due_date) : "-"}
-            </span>
-
-            <span className="flex items-center gap-1 text-[10px] text-slate-400">
-              <Clock size={10} />
-              {card.estimated_hours ? `${card.estimated_hours} h` : "-"}
-            </span>
+        <div className="flex items-end justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            {due && (
+              <MetaChip
+                strong
+                overdue={due.tone === "overdue"}
+                title={formatThaiDate(card.due_date!)}
+              >
+                {due.tone === "overdue" ? <AlarmClock size={12} /> : <Calendar size={12} />}
+                {due.text}
+              </MetaChip>
+            )}
+            {card.priority && !card.is_done && (
+              <PriorityBadge priority={card.priority} />
+            )}
+            {card.estimated_hours ? (
+              <MetaChip>
+                <Clock size={12} />
+                {card.estimated_hours} h
+              </MetaChip>
+            ) : null}
           </div>
 
           {card.assignee_name && card.assignee_id ? (

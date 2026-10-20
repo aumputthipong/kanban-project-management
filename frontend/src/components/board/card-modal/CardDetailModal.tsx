@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { createPortal } from "react-dom";
 import type { Card, Tag } from "@/types/board";
 import { useCardForm } from "../../../hooks/useCardForm";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { ModalShell } from "@/components/ui/Modal";
 import { useCanDeleteCard } from "@/hooks/useCanEdit";
 import { useBoardActions } from "@/hooks/useBoardActions";
 import { CardDevFields } from "./CardDevFields";
@@ -69,89 +68,71 @@ export function CardDetailModal({
     if (isOpen && card?.id) fetchSubtasks(card.id);
   }, [isOpen, card?.id, fetchSubtasks]);
 
-  useEscapeKey(isOpen, onClose);
-
   if (!isOpen) return null;
 
-  return createPortal(
-    <>
-      {/* No backdrop-blur: it costs a GPU composite every frame. */}
-      <div
-        className="fixed inset-0 z-9998 bg-slate-900/45"
-        onClick={onClose}
+  return (
+    <ModalShell label={form.title} onClose={onClose} className="max-w-3xl">
+      <CardModalHeader
+        cardId={card.id}
+        columnId={card.column_id}
+        boardId={boardId}
+        title={form.title}
+        onTitleChange={handleChange("title")}
+        onCommit={commitField}
+        canEdit={canEdit}
+        onClose={onClose}
       />
 
-      <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none px-4 py-6">
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={form.title}
-          className="pointer-events-auto w-full max-w-3xl max-h-full flex flex-col overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <CardModalHeader
-            cardId={card.id}
-            columnId={card.column_id}
-            boardId={boardId}
-            title={form.title}
-            onTitleChange={handleChange("title")}
+      <div className="flex flex-row flex-1 min-h-0 overflow-hidden border-t border-slate-200">
+        <div className="flex-1 min-w-0 px-6 pt-5 pb-6 flex flex-col gap-5.5 overflow-y-auto overscroll-contain">
+          <CardSourceSection cardId={card.id} boardId={boardId} />
+          <CardDescriptionField
+            value={form.description}
+            onChange={handleChange("description")}
             onCommit={commitField}
             canEdit={canEdit}
-            onClose={onClose}
           />
-
-          <div className="flex flex-row flex-1 min-h-0 overflow-hidden border-t border-slate-200">
-            <div className="flex-1 min-w-0 px-6 pt-5 pb-6 flex flex-col gap-5.5 overflow-y-auto overscroll-contain">
-              <CardSourceSection cardId={card.id} boardId={boardId} />
-              <CardDescriptionField
-                value={form.description}
-                onChange={handleChange("description")}
-                onCommit={commitField}
-                canEdit={canEdit}
-              />
-              <CardSubtaskSection
-                cardId={card.id}
-                boardId={boardId}
-                subtasks={card.subtasks}
-                canEdit={canEdit}
-                onAddSubtask={onAddSubtask}
-              />
-              {/* Dev fields */}
-              <CardDevFields
-                acceptanceValue={form.acceptance_criteria}
-                onAcceptanceChange={handleChange("acceptance_criteria")}
-                noteValue={form.implementation_note}
-                onNoteChange={handleChange("implementation_note")}
-                onCommit={commitField}
-                canEdit={canEdit}
-              />
-            </div>
-
-            <div className="w-62 shrink-0 px-5 pt-5 pb-6 border-l border-slate-200 overflow-y-auto overscroll-contain">
-              <CardFormFields
-                form={form}
-                members={members}
-                assigneeName={assigneeName}
-                boardId={boardId}
-                onChange={handleChange}
-                onTagsChange={setTags}
-                onCommit={commitField}
-                error={error}
-                canEdit={canEdit}
-              />
-            </div>
-          </div>
-
-          <CardModalFooter
+          <CardSubtaskSection
+            cardId={card.id}
+            boardId={boardId}
+            subtasks={card.subtasks}
             canEdit={canEdit}
-            canDelete={canDelete}
-            cardTitle={card.title}
-            onDelete={() => onDelete(card.id)}
-            onClose={onClose}
+            onAddSubtask={onAddSubtask}
+          />
+          {/* Dev fields */}
+          <CardDevFields
+            acceptanceValue={form.acceptance_criteria}
+            onAcceptanceChange={handleChange("acceptance_criteria")}
+            noteValue={form.implementation_note}
+            onNoteChange={handleChange("implementation_note")}
+            onCommit={commitField}
+            canEdit={canEdit}
+          />
+        </div>
+
+        <div className="w-62 shrink-0 px-5 pt-5 pb-6 border-l border-slate-200 overflow-y-auto overscroll-contain">
+          <CardFormFields
+            form={form}
+            members={members}
+            assigneeName={assigneeName}
+            boardId={boardId}
+            onChange={handleChange}
+            onTagsChange={setTags}
+            onCommit={commitField}
+            error={error}
+            canEdit={canEdit}
+            isDone={card.is_done}
           />
         </div>
       </div>
-    </>,
-    document.body,
+
+      <CardModalFooter
+        canEdit={canEdit}
+        canDelete={canDelete}
+        cardTitle={card.title}
+        onDelete={() => onDelete(card.id)}
+        onClose={onClose}
+      />
+    </ModalShell>
   );
 }

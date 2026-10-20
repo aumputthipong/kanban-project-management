@@ -1,7 +1,7 @@
 "use client";
 
 import type { Card } from "@/types/board";
-import { daysOverdue } from "./TaskTriageRows";
+import { daysOverdue } from "@/utils/date_helper";
 
 interface HeldCardRowProps {
   card: Card;

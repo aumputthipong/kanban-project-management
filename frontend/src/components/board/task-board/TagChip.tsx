@@ -13,11 +13,10 @@ interface TagChipProps {
 export function TagChip({ tag, onRemove, size = "sm" }: TagChipProps) {
   const hex = getColumnColorHex(tag.color) ?? "#94a3b8";
   const padding = size === "md" ? "px-2 py-0.5" : "px-1.5 py-0.5";
-  const textSize = size === "md" ? "text-[11px]" : "text-[10px]";
 
   return (
     <span
-      className={`inline-flex items-center gap-1 ${textSize} font-medium ${padding} rounded-md bg-slate-100 border border-slate-200 text-slate-700 w-fit`}
+      className={`inline-flex items-center gap-1 text-xs font-medium ${padding} rounded-md bg-slate-100 border border-slate-200 text-slate-700 w-fit`}
     >
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"

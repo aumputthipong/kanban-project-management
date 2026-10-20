@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { BUTTON_DANGER_TEXT, BUTTON_OUTLINE } from "@/components/ui/Modal";
 
 interface CardModalFooterProps {
   canEdit: boolean;
@@ -28,7 +29,7 @@ export function CardModalFooter({
           <button
             type="button"
             onClick={() => setConfirmOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-danger hover:bg-red-100 rounded-md transition-colors"
+            className={BUTTON_DANGER_TEXT}
           >
             <Trash2 size={14} />
             Delete
@@ -40,7 +41,7 @@ export function CardModalFooter({
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 py-2 text-sm font-medium rounded-md border border-slate-200 text-slate-900 hover:bg-slate-50 transition-colors"
+            className={BUTTON_OUTLINE}
           >
             Close
           </button>
@@ -50,7 +51,7 @@ export function CardModalFooter({
       <ConfirmDialog
         open={confirmOpen}
         title="Delete task"
-        description={`"${cardTitle}" will be permanently deleted. This cannot be undone.`}
+        description={`"${cardTitle}" จะถูกลบถาวรและกู้คืนไม่ได้`}
         confirmLabel="Delete"
         destructive
         onConfirm={() => {

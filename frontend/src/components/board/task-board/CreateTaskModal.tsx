@@ -1,12 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
-import { Calendar, Check, Flag, ListChecks, Plus, User, UserX, X } from "lucide-react";
 import { useBoardStore } from "@/store/useBoardStore";
-import { useEscapeKey } from "@/hooks/useEscapeKey";
-import { getAvatarColor } from "@/utils/avatar";
-import { QUICK_DATE_OPTIONS } from "@/utils/quickSelect";
+import {
+  BUTTON_OUTLINE,
+  BUTTON_PRIMARY,
+  ModalFooter,
+  ModalHeader,
+  ModalShell,
+} from "@/components/ui/Modal";
+import {
+  ClearFieldButton,
+  FIELD_BOX,
+  FIELD_INPUT,
+  FieldLabel,
+  PRIORITY_OPTIONS,
+  SegmentedControl,
+} from "@/components/board/card-modal/modalParts";
+import { AssigneeChips } from "./AssigneeChips";
+import { SubtaskDraftList } from "./SubtaskDraftList";
+import { DueDatePick } from "@/components/board/card-modal/QuickPick";
 
 interface Props {
   onClose: () => void;
@@ -24,49 +37,15 @@ interface Props {
   defaultColumnId?: string;
 }
 
-function offsetDate(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
-}
-
-const PRIORITIES = [
-  { key: "low", label: "Low", text: "text-emerald-600" },
-  { key: "medium", label: "Medium", text: "text-amber-600" },
-  { key: "high", label: "High", text: "text-red-600" },
-] as const;
-
-function AssigneeChip({
-  active,
-  colorId,
-  initial,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  colorId: string;
-  initial: string;
-  label: string;
-  onClick: () => void;
-}) {
+function Field({ label, action, children }: { label: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      className={`inline-flex items-center gap-1.5 h-8 pl-1 pr-2.5 rounded-full border text-xs font-semibold transition-colors max-w-[150px] ${
-        active
-          ? "bg-primary text-white border-primary"
-          : "bg-white text-slate-700 border-slate-200 hover:border-blue-400"
-      }`}
-    >
-      <span
-        className={`flex items-center justify-center w-6 h-6 rounded-full text-white text-[11px] font-bold shrink-0 ${getAvatarColor(colorId)}`}
-      >
-        {initial}
-      </span>
-      <span className="truncate">{label}</span>
-    </button>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <FieldLabel>{label}</FieldLabel>
+        {action}
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -74,31 +53,16 @@ export function CreateTaskModal({ onClose, onCreate, defaultColumnId }: Props) {
   const columns = useBoardStore((s) => s.columns);
   const boardMembers = useBoardStore((s) => s.boardMembers);
   const currentUserId = useBoardStore((s) => s.currentUserId);
-
   const todoColumns = columns.filter((c) => c.category !== "DONE");
-  const others = boardMembers.filter((m) => m?.user_id && m.user_id !== currentUserId);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subtasks, setSubtasks] = useState<string[]>([]);
-  const [columnId, setColumnId] = useState(
-    () => defaultColumnId ?? todoColumns[0]?.id ?? "",
-  );
+  const [columnId, setColumnId] = useState(() => defaultColumnId ?? todoColumns[0]?.id ?? "");
   // Defaults to the creator; "unassigned" is always a deliberate click.
   const [assigneeId, setAssigneeId] = useState<string | null>(currentUserId);
   const [priority, setPriority] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState("");
-
-  const myInitial =
-    boardMembers.find((m) => m.user_id === currentUserId)?.full_name?.charAt(0).toUpperCase() ?? "?";
-
-  useEscapeKey(true, onClose);
-
-  const addSubtask = () => setSubtasks((s) => [...s, ""]);
-  const updateSubtask = (i: number, v: string) =>
-    setSubtasks((s) => s.map((t, idx) => (idx === i ? v : t)));
-  const removeSubtask = (i: number) =>
-    setSubtasks((s) => s.filter((_, idx) => idx !== i));
 
   const canSubmit = title.trim().length > 0 && columnId !== "";
   const submit = () => {
@@ -113,257 +77,87 @@ export function CreateTaskModal({ onClose, onCreate, defaultColumnId }: Props) {
     onClose();
   };
 
-  const fieldLabel = "text-[11px] font-bold uppercase tracking-wider text-slate-400";
-  const inputClass =
-    "text-sm text-slate-700 placeholder-slate-400 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400";
-  const chipClass =
-    "inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors";
+  return (
+    <ModalShell label="New Task" onClose={onClose}>
+      <ModalHeader title="New Task" onClose={onClose} />
 
-  return createPortal(
-    <>
-      <div className="fixed inset-0 z-9998 bg-slate-900/45" onClick={onClose} />
-      <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none px-4 py-6">
-        <div
-          className="pointer-events-auto w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-full"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
-            <h2 className="text-lg font-bold text-slate-900">New Task</h2>
-            <button
-              onClick={onClose}
-              aria-label="ปิด"
-              className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition-colors"
-            >
-              <X size={18} />
-            </button>
-          </div>
+      <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
+        <input
+          autoFocus
+          aria-label="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+          }}
+          placeholder="Task title"
+          className={`w-full ${FIELD_BOX} text-base font-medium`}
+        />
+        <textarea
+          aria-label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="เพิ่มรายละเอียด (ไม่บังคับ)"
+          rows={2}
+          className={`w-full resize-none ${FIELD_INPUT}`}
+        />
 
-          {/* Body */}
-          <div className="px-6 py-4 flex flex-col gap-4 overflow-y-auto">
-            {/* Title */}
-            <input
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") submit();
-              }}
-              placeholder="Task title..."
-              className={`w-full text-[15px] font-medium text-slate-900 placeholder-slate-400 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400`}
+        <SubtaskDraftList items={subtasks} onChange={setSubtasks} />
+
+        <div className="flex flex-col gap-4 pt-4 border-t border-slate-200">
+          <Field label="Assignee">
+            <AssigneeChips
+              members={boardMembers}
+              currentUserId={currentUserId}
+              value={assigneeId}
+              onChange={setAssigneeId}
             />
+          </Field>
 
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="เพิ่มรายละเอียด... (ไม่บังคับ)"
-              rows={2}
-              className={`w-full ${inputClass} resize-none`}
-            />
+          <Field
+            label="Due date"
+            action={dueDate ? <ClearFieldButton field="due date" onClick={() => setDueDate("")} /> : null}
+          >
+            <DueDatePick value={dueDate} onChange={setDueDate} />
+          </Field>
 
-            {/* Subtasks */}
-            <div>
-              {subtasks.length === 0 ? (
-                <button
-                  type="button"
-                  onClick={addSubtask}
-                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:border-blue-400 hover:text-primary hover:bg-blue-50/40 transition-colors"
-                >
-                  <Plus size={14} /> Add subtask
-                </button>
-              ) : (
-                <div className="flex flex-col gap-1.5">
-                  <span className={`${fieldLabel} flex items-center gap-1`}>
-                    <ListChecks size={11} /> Subtasks
-                  </span>
-                  {subtasks.map((t, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span
-                        aria-hidden
-                        className="w-4 h-4 rounded border border-slate-300 shrink-0"
-                      />
-                      <input
-                        autoFocus
-                        value={t}
-                        onChange={(e) => updateSubtask(i, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addSubtask();
-                          }
-                        }}
-                        placeholder="รายการย่อย..."
-                        className={`flex-1 ${inputClass}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeSubtask(i)}
-                        aria-label="ลบรายการ"
-                        className="p-1 text-slate-400 hover:text-red-500 rounded transition-colors"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addSubtask}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-primary transition-colors w-fit"
-                  >
-                    <Plus size={13} /> Add item
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Meta */}
-            <div className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3">
-              {/* Assignee */}
-              <div>
-                <label className={`${fieldLabel} flex items-center gap-1 mb-1.5`}>
-                  <User size={11} /> Assignee
-                </label>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {currentUserId && (
-                    <AssigneeChip
-                      active={assigneeId === currentUserId}
-                      colorId={currentUserId}
-                      initial={myInitial}
-                      label="ฉัน"
-                      onClick={() => setAssigneeId(currentUserId)}
-                    />
-                  )}
-                  {others.map((m) => (
-                    <AssigneeChip
-                      key={m.user_id}
-                      active={assigneeId === m.user_id}
-                      colorId={m.user_id}
-                      initial={m.full_name?.charAt(0).toUpperCase() ?? "?"}
-                      label={m.full_name}
-                      onClick={() => setAssigneeId(m.user_id)}
-                    />
-                  ))}
-                  {/* Unassigned */}
-                  <button
-                    type="button"
-                    onClick={() => setAssigneeId(null)}
-                    className={`inline-flex items-center gap-1.5 h-8 pl-1.5 pr-3 rounded-full border text-xs font-semibold transition-colors ${
-                      assigneeId === null
-                        ? "bg-slate-800 text-white border-slate-800"
-                        : "bg-white text-slate-500 border-dashed border-slate-300 hover:border-slate-400"
-                    }`}
-                  >
-                    <span
-                      aria-hidden
-                      className={`flex items-center justify-center w-6 h-6 rounded-full border border-dashed ${
-                        assigneeId === null ? "border-white/60" : "border-slate-300"
-                      }`}
-                    >
-                      <UserX size={12} />
-                    </span>
-                    ยังไม่ระบุ
-                  </button>
-                </div>
-              </div>
-
-              {/* Due date */}
-              <div>
-                <label className={`${fieldLabel} flex items-center gap-1 mb-1.5`}>
-                  <Calendar size={11} /> Due Date
-                </label>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {QUICK_DATE_OPTIONS.map((c) => {
-                    const value = offsetDate(c.days);
-                    const active = dueDate === value;
-                    return (
-                      <button
-                        key={c.label}
-                        type="button"
-                        onClick={() => setDueDate(active ? "" : value)}
-                        className={`${chipClass} ${
-                          active
-                            ? "bg-blue-50 border-blue-200 text-blue-700"
-                            : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                        }`}
-                      >
-                        {c.label}
-                      </button>
-                    );
-                  })}
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="text-[11px] text-slate-600 bg-white border border-slate-200 rounded-md px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-              </div>
-
-              {/* Priority + column */}
-              <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
-                <div>
-                  <label className={`${fieldLabel} block mb-1.5`}>Priority</label>
-                  <div className="flex items-center gap-1.5">
-                    {PRIORITIES.map((p) => {
-                      const active = priority === p.key;
-                      return (
-                        <button
-                          key={p.key}
-                          type="button"
-                          onClick={() => setPriority(active ? null : p.key)}
-                          className={`${chipClass} gap-1.5 ${
-                            active
-                              ? `bg-white border-current ${p.text}`
-                              : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                          }`}
-                        >
-                          <Flag size={12} className={active ? p.text : "text-slate-300"} />
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="min-w-[140px] flex-1">
-                  <label className={`${fieldLabel} block mb-1.5`}>Column</label>
-                  <select
-                    value={columnId}
-                    onChange={(e) => setColumnId(e.target.value)}
-                    className={`w-full ${inputClass}`}
-                  >
-                    {todoColumns.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3.5 py-2 text-sm font-semibold text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={submit}
-              disabled={!canSubmit}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <Check size={15} strokeWidth={2.5} /> Create Task
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Priority">
+              <SegmentedControl
+                label="Priority"
+                options={PRIORITY_OPTIONS}
+                value={priority}
+                onChange={(p) => setPriority((cur) => (cur === p ? null : p))}
+              />
+            </Field>
+            <Field label="Column">
+              <select
+                aria-label="Column"
+                value={columnId}
+                onChange={(e) => setColumnId(e.target.value)}
+                className={`w-full ${FIELD_INPUT}`}
+              >
+                {todoColumns.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </Field>
           </div>
         </div>
       </div>
-    </>,
-    document.body,
+
+      <ModalFooter>
+        <div className="ml-auto flex items-center gap-2">
+          <button type="button" onClick={onClose} className={BUTTON_OUTLINE}>
+            Cancel
+          </button>
+          <button type="button" onClick={submit} disabled={!canSubmit} className={BUTTON_PRIMARY}>
+            Create Task
+          </button>
+        </div>
+      </ModalFooter>
+    </ModalShell>
   );
 }

@@ -11,11 +11,11 @@ const PRIORITY_CONFIG: {
   label: string;
   bars: number;
   color: string;
-  dimColor: string;
 }[] = [
-  { value: "high",   label: "High",   bars: 3, color: "#ef4444", dimColor: "#fca5a5" },
-  { value: "medium", label: "Medium", bars: 2, color: "#f59e0b", dimColor: "#fcd34d" },
-  { value: "low",    label: "Low",    bars: 1, color: "#3b82f6", dimColor: "#93c5fd" },
+  // design.md priority.* tokens
+  { value: "high",   label: "High",   bars: 3, color: "#dc2626" },
+  { value: "medium", label: "Medium", bars: 2, color: "#f59e0b" },
+  { value: "low",    label: "Low",    bars: 1, color: "#10b981" },
 ];
 
 // Signal bars icon
@@ -94,7 +94,7 @@ export function PriorityFilterDropdown() {
         )}
         <span>Priority</span>
         {isActive && (
-          <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] font-bold leading-none">
+          <span className="flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-surface-tint text-primary text-xs font-semibold leading-none">
             {activeCount}
           </span>
         )}

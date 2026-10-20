@@ -82,7 +82,7 @@ export function StatusDropdown({
           >
             {todoCols.length > 0 && (
               <>
-                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="px-3 py-1 text-xs font-medium text-slate-600">
                   To do
                 </div>
                 {todoCols.map((col) => (
@@ -100,7 +100,7 @@ export function StatusDropdown({
             )}
             {doneCols.length > 0 && (
               <>
-                <div className="px-3 py-1 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-t border-slate-100">
+                <div className="px-3 py-1 mt-1 text-xs font-medium text-slate-600 border-t border-slate-100">
                   Done
                 </div>
                 {doneCols.map((col) => (

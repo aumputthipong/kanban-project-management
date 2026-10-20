@@ -3,6 +3,7 @@
 import { AlarmClock, Calendar } from "lucide-react";
 import type { Card } from "@/types/board";
 import { getAvatarColor } from "@/utils/avatar";
+import { daysOverdue } from "@/utils/date_helper";
 
 // Priority shows only on the 3px left rail (design.md).
 const RAIL: Record<"high" | "medium" | "low" | "none", string> = {
@@ -17,14 +18,6 @@ const PRIORITY_DOT: Record<"high" | "medium" | "low", string> = {
   medium: "bg-amber-500",
   low: "bg-emerald-500",
 };
-
-export function daysOverdue(dueDateStr: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dueDateStr);
-  due.setHours(0, 0, 0, 0);
-  return Math.max(0, Math.ceil((today.getTime() - due.getTime()) / 86400000));
-}
 
 function severityInk(days: number): string {
   if (days >= 20) return "text-slate-900";

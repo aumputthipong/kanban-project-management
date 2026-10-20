@@ -10,6 +10,19 @@ export function FieldLabel({ children, className = "" }: { children: React.React
   );
 }
 
+export function ClearFieldButton({ field, onClick }: { field: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Clear ${field}`}
+      className="text-xs font-medium text-slate-600 hover:text-danger rounded-sm transition-colors"
+    >
+      Clear
+    </button>
+  );
+}
+
 export function Dot({ className }: { className: string }) {
   return <span aria-hidden className={`inline-block w-1.25 h-1.25 rounded-full shrink-0 ${className}`} />;
 }
@@ -26,12 +39,71 @@ export const PRIORITY_LABEL: Record<string, string> = {
   low: "Low",
 };
 
-export function MetaChip({ children, strong = false }: { children: React.ReactNode; strong?: boolean }) {
+export const FIELD_BOX =
+  "px-2.5 py-2 text-slate-900 placeholder-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-50 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint transition-colors";
+
+export const FIELD_INPUT = `${FIELD_BOX} text-sm`;
+
+export function SegmentedControl<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; content: React.ReactNode }[];
+  value: string | null;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex rounded-md border border-slate-200 overflow-hidden" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 text-xs border-r border-slate-200 last:border-r-0 transition-colors ${
+            value === o.value
+              ? "bg-surface-tint text-slate-900 font-semibold"
+              : "text-slate-600 font-medium hover:bg-slate-50"
+          }`}
+        >
+          {o.content}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export const PRIORITY_OPTIONS = (["low", "medium", "high"] as const).map((p) => ({
+  value: p,
+  content: (
+    <>
+      <Dot className={PRIORITY_DOT[p]} />
+      {PRIORITY_LABEL[p]}
+    </>
+  ),
+}));
+
+export function MetaChip({
+  children,
+  strong = false,
+  overdue = false,
+  title,
+}: {
+  children: React.ReactNode;
+  strong?: boolean;
+  overdue?: boolean;
+  title?: string;
+}) {
+  const tone = overdue
+    ? "border-red-200 bg-red-100 text-red-700 font-semibold"
+    : `border-slate-200 bg-white font-medium ${strong ? "text-slate-900" : "text-slate-600"}`;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full border border-slate-200 bg-white text-xs font-medium tracking-wide ${
-        strong ? "text-slate-900" : "text-slate-600"
-      }`}
+      title={title}
+      className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full border text-xs tracking-wide whitespace-nowrap ${tone}`}
     >
       {children}
     </span>
