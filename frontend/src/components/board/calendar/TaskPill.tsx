@@ -83,13 +83,13 @@ export function TaskPill({ card, onSelect, inPopover = false }: TaskPillProps) {
 
       <StatusIcon state={state} />
 
-      <span className={`flex-1 truncate text-[11px] ${styles.text}`}>
+      <span className={`flex-1 truncate text-xs ${styles.text}`}>
         {card.title}
       </span>
 
       {duration && (
         <span
-          className={`shrink-0 text-[10px] ${state === "overdue" ? "font-bold text-red-700" : "text-slate-500"}`}
+          className={`shrink-0 text-xs ${state === "overdue" ? "font-bold text-red-700" : "text-slate-500"}`}
         >
           {duration}
         </span>
@@ -112,7 +112,7 @@ export function TaskPill({ card, onSelect, inPopover = false }: TaskPillProps) {
       {/* Avatar */}
       {card.assignee_name && card.assignee_id ? (
         <span
-          className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ${getAvatarColor(card.assignee_id)}`}
+          className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getAvatarColor(card.assignee_id)}`}
         >
           {card.assignee_name.charAt(0).toUpperCase()}
         </span>

@@ -195,7 +195,7 @@ export const TaskCard = memo(function TaskCard({
 
           {card.assignee_name && card.assignee_id ? (
             <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 ${getAvatarColor(card.assignee_id)}`}
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${getAvatarColor(card.assignee_id)}`}
               title={card.assignee_name}
             >
               {card.assignee_name.charAt(0).toUpperCase()}

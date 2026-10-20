@@ -201,7 +201,7 @@ function ChipDropdown({
       >
         {label}
         {active && (
-          <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">
+          <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-white">
             {activeCount}
           </span>
         )}

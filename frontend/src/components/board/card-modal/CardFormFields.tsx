@@ -60,7 +60,7 @@ export function CardFormFields({ form, members, assigneeName, boardId, onChange,
           <AssigneeDropdown members={members} value={form.assignee_id} onSelect={(id) => set("assignee_id", id)} />
         ) : assigneeName ? (
           <span className="flex items-center gap-2 text-sm text-slate-900">
-            <span className={`w-4.5 h-4.5 rounded-full grid place-items-center text-white text-[10px] font-semibold shrink-0 ${getAvatarColor(form.assignee_id)}`}>
+            <span className={`w-4.5 h-4.5 rounded-full grid place-items-center text-white text-xs font-semibold shrink-0 ${getAvatarColor(form.assignee_id)}`}>
               {assigneeName.charAt(0).toUpperCase()}
             </span>
             {assigneeName}

@@ -14,7 +14,8 @@ import {
   addDays,
 } from "date-fns";
 import dynamic from "next/dynamic";
-import { useBoardStore, UNASSIGNED_FILTER } from "@/store/useBoardStore";
+import { useBoardStore } from "@/store/useBoardStore";
+import { matchesBoardFilters } from "@/lib/boardFilters";
 import { useBoardActions } from "@/hooks/useBoardActions";
 import { useCanEdit } from "@/hooks/useCanEdit";
 import type { Card } from "@/types/board";
@@ -65,18 +66,8 @@ export function ProjectCalendar({ boardId }: Props) {
       .filter((card) => card.due_date)
       .filter((card) => {
         if (myTasksOnly && card.assignee_id !== currentUserId) return false;
-        if (filterAssigneeId === UNASSIGNED_FILTER) {
-          if (card.assignee_id != null) return false;
-        } else if (filterAssigneeId && card.assignee_id !== filterAssigneeId) {
-          return false;
-        }
-        if (filterPriorities.length > 0) {
-          if (!card.priority || !filterPriorities.includes(card.priority)) return false;
-        }
-        if (filterTagIds.length > 0) {
-          const cardTagIds = card.tags?.map((t) => t.id) ?? [];
-          if (!filterTagIds.some((id) => cardTagIds.includes(id))) return false;
-        }
+        const filters = { assigneeId: filterAssigneeId, priorities: filterPriorities, tagIds: filterTagIds };
+        if (!matchesBoardFilters(card, filters)) return false;
         if (statusFilter.length > 0) {
           if (!statusFilter.includes(classifyPillState(card))) return false;
         }
@@ -150,7 +141,7 @@ export function ProjectCalendar({ boardId }: Props) {
           {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => (
             <div
               key={d}
-              className="px-2 py-2 text-center text-[10px] font-semibold tracking-wider text-slate-500"
+              className="px-2 py-2 text-center text-xs font-semibold tracking-wider text-slate-500"
             >
               {d}
             </div>
@@ -205,7 +196,7 @@ export function ProjectCalendar({ boardId }: Props) {
                         <button
                           type="button"
                           onClick={() => setMoreCellDate(day)}
-                          className="rounded px-1 text-left text-[10px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          className="rounded px-1 text-left text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                         >
                           + {overflow} more
                         </button>
