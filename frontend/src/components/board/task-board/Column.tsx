@@ -132,7 +132,7 @@ export const KanbanColumn = memo(function KanbanColumn({
             items={cards.map((c) => c.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="px-3 pt-3 pb-4 flex flex-col gap-3 flex-1">
+            <div className="px-2.5 pt-2.5 pb-4 flex flex-col gap-2 flex-1">
               {visibleCards.map((card) => (
                 <div key={card.id}>
                   {dropIndicatorBeforeId === card.id && <DropIndicator />}
