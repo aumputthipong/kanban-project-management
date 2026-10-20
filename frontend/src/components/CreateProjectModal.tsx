@@ -3,9 +3,16 @@
 import { apiClient } from "@/lib/apiClient";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
-import { X, FolderPlus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { BoardAppearancePicker } from "@/components/board/settings/BoardAppearancePicker";
+import { FIELD_INPUT, FieldLabel } from "@/components/board/card-modal/modalParts";
+import {
+  BUTTON_OUTLINE,
+  BUTTON_PRIMARY,
+  ModalFooter,
+  ModalHeader,
+  ModalShell,
+} from "@/components/ui/Modal";
 import {
   DEFAULT_BOARD_COLOR,
   DEFAULT_BOARD_ICON,
@@ -32,16 +39,9 @@ export function CreateProjectModal({ onClose }: CreateProjectModalProps) {
   };
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !isCreating) onClose();
-    };
-    window.addEventListener("keydown", handler);
     const t = setTimeout(() => inputRef.current?.focus(), 50);
-    return () => {
-      window.removeEventListener("keydown", handler);
-      clearTimeout(t);
-    };
-  }, [isCreating, onClose]);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,135 +64,82 @@ export function CreateProjectModal({ onClose }: CreateProjectModalProps) {
         },
       });
       router.push(`/board/${newBoard.id}/tasks`);
+      // The project layout (sidebar list) persists across the push, so refresh it.
+      router.refresh();
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "สร้าง Project ไม่สำเร็จ");
       setIsCreating(false);
     }
   };
 
-  return createPortal(
-    <>
-      <div
-        className="fixed inset-0 z-9998 bg-black/40 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+  return (
+    <ModalShell label="New Project" onClose={handleClose} className="max-w-md">
+      <ModalHeader title="New Project" onClose={handleClose} />
 
-      <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none px-4">
-        <div
-          className="pointer-events-auto w-full max-w-md bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-blue-50 rounded-lg">
-                <FolderPlus size={16} className="text-primary" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">New Project</h2>
-            </div>
-            <button
-              onClick={handleClose}
+      <form onSubmit={handleSubmit} className="flex flex-col min-h-0">
+        <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="project-name">
+              <FieldLabel>Project name</FieldLabel>
+            </label>
+            <input
+              ref={inputRef}
+              id="project-name"
+              type="text"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (error) setError(null);
+              }}
               disabled={isCreating}
-              className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition-colors disabled:opacity-40"
-            >
-              <X size={16} />
-            </button>
+              aria-invalid={!!error}
+              placeholder="ใส่ชื่อ Project ของคุณ"
+              className={`${FIELD_INPUT} disabled:opacity-50 ${error ? "border-danger" : ""}`}
+            />
+            {error && <p className="text-xs font-medium text-danger">{error}</p>}
           </div>
 
-          {/* Body */}
-          <form onSubmit={handleSubmit} className="px-5 py-5 flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="project-name"
-                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
-              >
-                Project Name
-              </label>
-              <input
-                ref={inputRef}
-                id="project-name"
-                type="text"
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  if (error) setError(null);
-                }}
-                disabled={isCreating}
-                placeholder="ใส่ชื่อ Project ของคุณ"
-                className={`text-sm border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 transition disabled:opacity-50 disabled:bg-slate-50 ${
-                  error
-                    ? "border-red-300 focus:ring-red-100 focus:border-red-400"
-                    : "border-slate-200 focus:ring-blue-100 focus:border-blue-400"
-                }`}
-              />
-              {error && (
-                <p className="text-xs text-red-500 font-medium">{error}</p>
-              )}
-            </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="project-desc">
+              <FieldLabel>Description</FieldLabel>
+            </label>
+            <textarea
+              id="project-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isCreating}
+              rows={2}
+              maxLength={160}
+              placeholder="อธิบาย Project สั้น ๆ (ไม่บังคับ)"
+              className={`${FIELD_INPUT} resize-none disabled:opacity-50`}
+            />
+          </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="project-desc"
-                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
-              >
-                Description
-              </label>
-              <textarea
-                id="project-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={isCreating}
-                rows={2}
-                maxLength={160}
-                placeholder="อธิบาย Project สั้น ๆ (ไม่บังคับ)"
-                className="text-sm border border-slate-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition disabled:opacity-50 disabled:bg-slate-50"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                Appearance
-              </span>
-              <BoardAppearancePicker
-                name={title}
-                color={color}
-                icon={icon}
-                canManage={!isCreating}
-                saving={null}
-                onPickColor={setColor}
-                onPickIcon={setIcon}
-              />
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={isCreating}
-                className="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isCreating || !title.trim()}
-                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-white font-medium hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              >
-                {isCreating ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    Creating…
-                  </>
-                ) : (
-                  "Create Project"
-                )}
-              </button>
-            </div>
-          </form>
+          <div className="flex flex-col gap-2">
+            <FieldLabel>Appearance</FieldLabel>
+            <BoardAppearancePicker
+              name={title}
+              color={color}
+              icon={icon}
+              canManage={!isCreating}
+              saving={null}
+              onPickColor={setColor}
+              onPickIcon={setIcon}
+            />
+          </div>
         </div>
-      </div>
-    </>,
-    document.body,
+
+        <ModalFooter>
+          <button type="button" onClick={handleClose} disabled={isCreating} className={`ml-auto ${BUTTON_OUTLINE}`}>
+            Cancel
+          </button>
+          <button type="submit" disabled={isCreating || !title.trim()} className={BUTTON_PRIMARY}>
+            {isCreating && <Loader2 size={14} className="animate-spin" />}
+            {isCreating ? "Creating…" : "Create Project"}
+          </button>
+        </ModalFooter>
+      </form>
+    </ModalShell>
   );
 }

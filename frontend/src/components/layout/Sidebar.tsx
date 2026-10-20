@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -13,6 +14,7 @@ import {
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { useBelowLg } from "@/hooks/useBelowLg";
 import { boardColor, BoardGlyph } from "@/lib/boardAppearance";
+import { CreateProjectModal } from "@/components/CreateProjectModal";
 
 interface Board {
   id: string;
@@ -31,6 +33,7 @@ export function Sidebar({ boards }: SidebarProps) {
   const belowLg = useBelowLg();
   // Force-collapsed below lg (design.md → Responsive).
   const isCollapsed = belowLg || storeCollapsed;
+  const [creating, setCreating] = useState(false);
 
   const navItem = (
     href: string,
@@ -106,8 +109,11 @@ export function Sidebar({ boards }: SidebarProps) {
                 Projects
               </p>
               <button
+                type="button"
+                onClick={() => setCreating(true)}
                 className="text-slate-400 hover:text-slate-700 transition-colors p-1"
                 title="New Project"
+                aria-label="New Project"
               >
                 <Plus size={14} />
               </button>
@@ -167,9 +173,8 @@ export function Sidebar({ boards }: SidebarProps) {
           <Archive size={16} className="shrink-0" />
           {!isCollapsed && "Stash"}
         </Link>
-
-      
       </div>
+      {creating && <CreateProjectModal onClose={() => setCreating(false)} />}
     </aside>
   );
 }
