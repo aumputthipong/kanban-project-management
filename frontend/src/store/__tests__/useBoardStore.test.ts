@@ -43,6 +43,7 @@ beforeEach(() => {
     columns: [],
     filterAssigneeId: null,
     filterPriorities: [],
+    filterTagIds: [],
     currentUserId: "",
     boardMembers: [],
     isLoading: false,
@@ -93,6 +94,20 @@ describe("clearFilterPriorities", () => {
     useBoardStore.getState().toggleFilterPriority("medium");
     useBoardStore.getState().clearFilterPriorities();
     expect(useBoardStore.getState().filterPriorities).toHaveLength(0);
+  });
+});
+
+describe("clearFilters", () => {
+  it("resets assignee, priority, and tag filters", () => {
+    const store = useBoardStore.getState();
+    store.setFilterAssigneeId("user-abc");
+    store.toggleFilterPriority("high");
+    store.toggleFilterTag("tag-1");
+    useBoardStore.getState().clearFilters();
+    const s = useBoardStore.getState();
+    expect(s.filterAssigneeId).toBeNull();
+    expect(s.filterPriorities).toHaveLength(0);
+    expect(s.filterTagIds).toHaveLength(0);
   });
 });
 

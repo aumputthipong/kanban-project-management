@@ -52,9 +52,7 @@ function ClearFiltersButton() {
   const filterAssigneeId = useBoardStore((s) => s.filterAssigneeId);
   const filterPriorities = useBoardStore((s) => s.filterPriorities);
   const filterTagIds = useBoardStore((s) => s.filterTagIds);
-  const setFilterAssigneeId = useBoardStore((s) => s.setFilterAssigneeId);
-  const clearFilterPriorities = useBoardStore((s) => s.clearFilterPriorities);
-  const clearFilterTags = useBoardStore((s) => s.clearFilterTags);
+  const clearFilters = useBoardStore((s) => s.clearFilters);
 
   if (!hasBoardFilters({ assigneeId: filterAssigneeId, priorities: filterPriorities, tagIds: filterTagIds })) {
     return null;
@@ -63,11 +61,7 @@ function ClearFiltersButton() {
   return (
     <button
       type="button"
-      onClick={() => {
-        setFilterAssigneeId(null);
-        clearFilterPriorities();
-        clearFilterTags();
-      }}
+      onClick={clearFilters}
       className="cursor-pointer inline-flex items-center gap-1 h-8 px-2 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
     >
       <X size={13} /> Clear filters
