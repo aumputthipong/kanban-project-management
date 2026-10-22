@@ -99,7 +99,7 @@ export function CalendarFilters({
         onClear={clearFilterTags}
       >
         {allTags.length === 0 ? (
-          <div className="px-3 py-2 text-xs text-slate-400">No tags</div>
+          <div className="px-3 py-2 text-xs text-slate-600">ยังไม่มี Tag</div>
         ) : (
           allTags.map((t) => (
             <DropdownItem

@@ -21,7 +21,7 @@ export function ColumnEmptyHint({ isDone, filtered, onAdd }: ColumnEmptyHintProp
       onClick={onAdd}
       className="flex items-center justify-center gap-1.5 w-full py-6 rounded-lg border border-dashed border-slate-300 text-xs font-medium text-slate-600 hover:bg-white hover:text-slate-900 transition-colors"
     >
-      <Plus size={14} /> Add card
+      <Plus size={14} /> Add task
     </button>
   );
 }

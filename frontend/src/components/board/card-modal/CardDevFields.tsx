@@ -45,7 +45,7 @@ function CardDevFieldsImpl({
     <div className="flex flex-col gap-3">
       {showAC && (
         <DevField
-          label="Acceptance Criteria"
+          label="Acceptance criteria"
           sub="เสร็จเมื่อ"
           icon={<Check size={14} />}
           canEdit={canEdit}
@@ -63,7 +63,7 @@ function CardDevFieldsImpl({
               onChange={onAcceptanceChange}
               onBlur={() => onCommit("acceptance_criteria")}
               placeholder={`เช่น "login ด้วย email ได้" (บรรทัดละข้อ)`}
-              className="w-full text-sm text-slate-900 border border-slate-200 rounded-md px-2.5 py-2 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint resize-y placeholder:text-slate-400"
+              className="w-full text-sm text-slate-900 border border-slate-200 rounded-md px-2.5 py-2 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint resize-y placeholder:text-slate-500"
             />
           ) : (
             <AcceptanceReadView value={acceptanceValue} />
@@ -73,7 +73,7 @@ function CardDevFieldsImpl({
 
       {showNote && (
         <DevField
-          label="Implementation Note"
+          label="Dev note"
           sub="สำหรับ dev"
           icon={<Code2 size={14} />}
           canEdit={canEdit}
@@ -91,7 +91,7 @@ function CardDevFieldsImpl({
               onChange={onNoteChange}
               onBlur={() => onCommit("implementation_note")}
               placeholder={`เช่น "ใช้ webhook X", "rate limit Y/min"`}
-              className="w-full text-sm text-slate-900 border border-slate-200 rounded-md px-2.5 py-2 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint resize-y placeholder:text-slate-400"
+              className="w-full text-sm text-slate-900 border border-slate-200 rounded-md px-2.5 py-2 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint resize-y placeholder:text-slate-500"
             />
           ) : (
             <p className="text-sm text-slate-600 whitespace-pre-wrap">{noteValue}</p>
