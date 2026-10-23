@@ -19,8 +19,8 @@ move the moment it happens, without waiting on the server to feel fast.
 
 ## Try it
 
-**Live:** <!-- TODO: production URL --> (free hosting: the first request after
-a quiet spell can take about a minute while the API wakes up)
+**Live:** [TurTask Management](https://turtask-management.vercel.app/) 
+(free hosting: the first request after a quiet spell can take about a minute while the API wakes up)
 
 Click **Try demo** on the landing or sign-in page: you get a throwaway account
 with a private copy of the sample board, deleted after 24 hours. Or sign in
