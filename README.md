@@ -15,7 +15,7 @@
 A real-time Kanban for small teams, built so that every teammate sees a card
 move the moment it happens, without waiting on the server to feel fast.
 
-![Task card: subtasks, priority, due date, estimate and tags in one modal](docs/screenshots/task-card.png)
+![Kanban board](docs/screenshots/board.png)
 
 ## Try it
 
@@ -141,9 +141,9 @@ More reasoning: [docs/CODE-NOTES.md](docs/CODE-NOTES.md) and the
 
 ## Screens
 
-| Kanban board | My Work |
+| Task detail | My Work |
 |---|---|
-| ![Kanban board: filter chips, columns, cards](docs/screenshots/board.png) | ![My Work: due today across boards](docs/screenshots/my-work.png) |
+| ![Task detail: subtasks, priority, due date, estimate and tags](docs/screenshots/task-card.png) | ![My Work: due today across boards](docs/screenshots/my-work.png) |
 | **Planning session** | **Members and roles** |
 | ![Planning: requirements, decisions, questions](docs/screenshots/planning.png) | ![Members: roles and invite link](docs/screenshots/members.png) |
 
