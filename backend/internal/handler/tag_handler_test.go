@@ -47,7 +47,7 @@ func TestGetBoardTags_Success(t *testing.T) {
 		GetTagsByBoardFn: func(ctx context.Context, boardID string) ([]db.Tag, error) {
 			assert.Equal(t, validBoardID, boardID)
 			return []db.Tag{
-				{ID: validTagID, BoardID: validBoardID, Name: "bug", Color: "#EF4444"},
+				{ID: validTagID, BoardID: validBoardID, Name: "bug", Color: "rose"},
 			}, nil
 		},
 	}
@@ -64,7 +64,7 @@ func TestGetBoardTags_Success(t *testing.T) {
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&res))
 	require.Len(t, res, 1)
 	assert.Equal(t, "bug", res[0]["name"])
-	assert.Equal(t, "#EF4444", res[0]["color"])
+	assert.Equal(t, "rose", res[0]["color"])
 }
 
 // Must serialise as [], not null.
@@ -121,14 +121,14 @@ func TestCreateBoardTag_Success_Returns201(t *testing.T) {
 		CreateTagFn: func(ctx context.Context, boardID, name, color string) (db.Tag, error) {
 			assert.Equal(t, validBoardID, boardID)
 			assert.Equal(t, "bug", name)
-			assert.Equal(t, "#EF4444", color)
+			assert.Equal(t, "rose", color)
 			return db.Tag{ID: validTagID, BoardID: boardID, Name: name, Color: color}, nil
 		},
 	}
 	h := NewTagHandler(svc, nil)
 
 	req := newTagRequest(http.MethodPost, "/boards/"+validBoardID+"/tags",
-		`{"name":"bug","color":"#EF4444"}`)
+		`{"name":"bug","color":"rose"}`)
 	w := httptest.NewRecorder()
 
 	httputil.MakeHandler(h.CreateBoardTag)(w, req)
@@ -151,7 +151,7 @@ func TestCreateBoardTag_BlankName_Returns422(t *testing.T) {
 	h := NewTagHandler(svc, nil)
 
 	req := newTagRequest(http.MethodPost, "/boards/"+validBoardID+"/tags",
-		`{"name":"   ","color":"#EF4444"}`)
+		`{"name":"   ","color":"rose"}`)
 	w := httptest.NewRecorder()
 
 	httputil.MakeHandler(h.CreateBoardTag)(w, req)
@@ -169,7 +169,7 @@ func TestCreateBoardTag_NameTooLong_Returns422(t *testing.T) {
 	h := NewTagHandler(svc, nil)
 
 	req := newTagRequest(http.MethodPost, "/boards/"+validBoardID+"/tags",
-		`{"name":"release","color":"#EF4444"}`)
+		`{"name":"release","color":"rose"}`)
 	w := httptest.NewRecorder()
 
 	httputil.MakeHandler(h.CreateBoardTag)(w, req)
@@ -188,7 +188,7 @@ func TestCreateBoardTag_ServiceError_Returns500WithoutLeakingDBText(t *testing.T
 	h := NewTagHandler(svc, nil)
 
 	req := newTagRequest(http.MethodPost, "/boards/"+validBoardID+"/tags",
-		`{"name":"bug","color":"#EF4444"}`)
+		`{"name":"bug","color":"rose"}`)
 	w := httptest.NewRecorder()
 
 	httputil.MakeHandler(h.CreateBoardTag)(w, req)
@@ -203,7 +203,7 @@ func TestCreateBoardTag_EmptyName_RejectedByValidator_Returns400(t *testing.T) {
 	h := NewTagHandler(&mock.MockTagService{}, nil)
 
 	req := newTagRequest(http.MethodPost, "/boards/"+validBoardID+"/tags",
-		`{"name":"","color":"#EF4444"}`)
+		`{"name":"","color":"rose"}`)
 	w := httptest.NewRecorder()
 
 	httputil.MakeHandler(h.CreateBoardTag)(w, req)
@@ -211,11 +211,11 @@ func TestCreateBoardTag_EmptyName_RejectedByValidator_Returns400(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestCreateBoardTag_NonHexColor_Returns400(t *testing.T) {
+func TestCreateBoardTag_HexColor_Returns400(t *testing.T) {
 	h := NewTagHandler(&mock.MockTagService{}, nil)
 
 	req := newTagRequest(http.MethodPost, "/boards/"+validBoardID+"/tags",
-		`{"name":"bug","color":"red"}`)
+		`{"name":"bug","color":"#EF4444"}`)
 	w := httptest.NewRecorder()
 
 	httputil.MakeHandler(h.CreateBoardTag)(w, req)
