@@ -109,7 +109,7 @@ type UpdateCardRequest struct {
 
 type CreateTagRequest struct {
 	Name  string `json:"name"  validate:"required,min=1,max=50"`
-	Color string `json:"color" validate:"required,hexcolor"`
+	Color string `json:"color" validate:"required,oneof=slate blue purple green amber rose pink cyan"`
 }
 
 type SubtaskRequest struct {
