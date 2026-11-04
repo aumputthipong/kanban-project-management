@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -65,6 +66,7 @@ type config struct {
 	Production         bool
 	CrossSite          bool
 	TrustedProxies     int
+	RateLimitDisabled  bool
 }
 
 // TRUSTED_PROXY_COUNT, default 1 — see docs/DEPLOY.md. 0 only when exposed directly.
@@ -81,6 +83,13 @@ func trustedProxyCount() int {
 	return n
 }
 
+func validateConfig(cfg config) error {
+	if cfg.Production && cfg.RateLimitDisabled {
+		return errors.New("RATE_LIMIT_DISABLED cannot be set when ENV=production")
+	}
+	return nil
+}
+
 func loadConfig() config {
 	cfg := config{
 		DBUrl:              os.Getenv("DB_URL"),
@@ -94,6 +103,14 @@ func loadConfig() config {
 		MigrationsPath:     os.Getenv("MIGRATIONS_PATH"),
 		SkipMigrations:     os.Getenv("SKIP_MIGRATIONS") == "true",
 		TrustedProxies:     trustedProxyCount(),
+		RateLimitDisabled:  os.Getenv("RATE_LIMIT_DISABLED") == "true",
+	}
+	if err := validateConfig(cfg); err != nil {
+		slog.Error("invalid config", "err", err)
+		os.Exit(1)
+	}
+	if cfg.RateLimitDisabled {
+		slog.Warn("rate limiting is disabled (RATE_LIMIT_DISABLED=true); never use this in production")
 	}
 	if cfg.DBUrl == "" {
 		slog.Error("DB_URL is required but not set")
@@ -223,6 +240,7 @@ func run(ctx context.Context, cfg config) error {
 		version:         version,
 		production:      cfg.Production,
 		trustedProxies:  cfg.TrustedProxies,
+		rateLimitOff:    cfg.RateLimitDisabled,
 		startedAt:       startedAt,
 	})
 

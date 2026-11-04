@@ -70,10 +70,11 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label className="text-xs font-semibold text-slate-600 block mb-1">
+          <label htmlFor="register-name" className="text-xs font-semibold text-slate-600 block mb-1">
             Full Name
           </label>
           <input
+            id="register-name"
             type="text"
             value={form.full_name}
             onChange={set("full_name")}
@@ -82,10 +83,11 @@ export default function RegisterPage() {
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-slate-600 block mb-1">
+          <label htmlFor="register-email" className="text-xs font-semibold text-slate-600 block mb-1">
             Email
           </label>
           <input
+            id="register-email"
             type="email"
             value={form.email}
             onChange={set("email")}
@@ -94,10 +96,11 @@ export default function RegisterPage() {
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-slate-600 block mb-1">
+          <label htmlFor="register-password" className="text-xs font-semibold text-slate-600 block mb-1">
             Password
           </label>
           <input
+            id="register-password"
             type="password"
             value={form.password}
             onChange={set("password")}

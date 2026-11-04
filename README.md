@@ -173,7 +173,7 @@ are at <http://localhost:8080/docs/index.html>.
 |---|---|
 | Everything CI runs | `make verify` |
 | Backend tests / integration tests | `make test` / `make test-integration` |
-| Frontend tests / type check / E2E | `make test-fe` / `make typecheck` / `make test-e2e` |
+| Frontend tests / type check / E2E | `make test-fe` / `make typecheck` / `make test-e2e` (first time: `cd frontend && npx playwright install chromium`; needs `make dev` for Postgres) |
 | Regenerate sqlc / OpenAPI | `make sqlc` / `make swag` |
 | New migration | `make migrate-new name=add_x` |
 

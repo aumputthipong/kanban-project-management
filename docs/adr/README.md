@@ -26,6 +26,7 @@ ADR that references the old one, not an edit.
 | [0010](0010-per-visitor-demo-sandboxes.md)    | Demo button mints a per-visitor sandbox          | Accepted |
 | [0011](0011-minimal-comments.md)              | Minimal comments; explanations live in docs      | Accepted |
 | [0012](0012-board-role-model.md)              | Board roles: guard what destroys, leave collaboration open | Accepted |
+| [0013](0013-e2e-strategy.md)                  | E2E: Playwright against the real stack, Chromium only | Accepted |
 
 ## Adding an ADR
 

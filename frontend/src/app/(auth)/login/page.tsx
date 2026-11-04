@@ -105,8 +105,9 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label className="text-xs font-semibold text-slate-600 block mb-1">Email</label>
+          <label htmlFor="login-email" className="text-xs font-semibold text-slate-600 block mb-1">Email</label>
           <input
+            id="login-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -115,8 +116,9 @@ function LoginForm() {
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-slate-600 block mb-1">Password</label>
+          <label htmlFor="login-password" className="text-xs font-semibold text-slate-600 block mb-1">Password</label>
           <input
+            id="login-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

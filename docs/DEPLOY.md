@@ -160,6 +160,7 @@ Before running `down`, take a fresh `pg_dump` — `down` migrations may drop col
 ### Rate limit too aggressive
 - Defaults: 20/min/IP for `/api/auth`, 30/hour/IP for `POST /api/auth/demo`, 300/min/IP for protected. If a legitimate caller hits the limit, edit `internal/middleware/ratelimit.go` and redeploy.
 - For a single trusted IP that needs more, wrap it with a custom `KeyFunc` that returns a constant for that IP.
+- `RATE_LIMIT_DISABLED=true` turns every limiter off. It exists for the Playwright suite (`make test-e2e`) and the server refuses to start with it under `ENV=production` — never set it on a deploy.
 
 ### Rate limit counts everyone as one caller (verify after every new deploy target)
 Limits key off the client IP, which behind a proxy has to come from `X-Forwarded-For`. `TRUSTED_PROXY_COUNT` says how many proxies to skip: **1** for Render / nginx / a single load balancer (the default), **2** with Cloudflare in front of one, **0** when the binary is exposed directly.
