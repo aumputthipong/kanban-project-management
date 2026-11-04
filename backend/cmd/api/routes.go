@@ -37,7 +37,15 @@ type routerDeps struct {
 	version         string
 	production      bool
 	trustedProxies  int
+	rateLimitOff    bool
 	startedAt       time.Time
+}
+
+func (d routerDeps) limit(mw func(http.Handler) http.Handler) func(http.Handler) http.Handler {
+	if d.rateLimitOff {
+		return func(next http.Handler) http.Handler { return next }
+	}
+	return mw
 }
 
 func setupRoutes(d routerDeps) http.Handler {
@@ -68,13 +76,13 @@ func setupRoutes(d routerDeps) http.Handler {
 	}
 
 	r.Route("/api/auth", func(r chi.Router) {
-		r.Use(middleware.AuthRateLimit())
+		r.Use(d.limit(middleware.AuthRateLimit()))
 
 		r.Post("/register", httputil.MakeHandler(d.authHandler.Register))
 		r.Post("/login", httputil.MakeHandler(d.authHandler.Login))
 		r.Post("/oauth", httputil.MakeHandler(d.authHandler.OAuthCallback))
 		// Own limiter: each call seeds a whole board.
-		r.With(middleware.DemoRateLimit()).Post("/demo", httputil.MakeHandler(d.authHandler.Demo))
+		r.With(d.limit(middleware.DemoRateLimit())).Post("/demo", httputil.MakeHandler(d.authHandler.Demo))
 		r.Post("/logout", httputil.MakeHandler(d.authHandler.Logout))
 		// The refresh cookie is the credential.
 		r.Post("/refresh", httputil.MakeHandler(d.authHandler.Refresh))
@@ -87,7 +95,7 @@ func setupRoutes(d routerDeps) http.Handler {
 
 	// Ticket auth, not cookie (docs/adr/0005). Membership is still gated.
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.GeneralRateLimit())
+		r.Use(d.limit(middleware.GeneralRateLimit()))
 		r.Use(middleware.RequireWSTicket)
 
 		r.With(requireBoardMember).Get("/ws/{boardID}", func(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +105,7 @@ func setupRoutes(d routerDeps) http.Handler {
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.GeneralRateLimit())
+		r.Use(d.limit(middleware.GeneralRateLimit()))
 		r.Use(middleware.RequireAuth)
 
 		r.Get("/api/auth/me", httputil.MakeHandler(d.authHandler.Me))
