@@ -114,6 +114,8 @@ export const KanbanColumn = memo(function KanbanColumn({
       ) : (
         <div
           ref={setNodeRef}
+          role="region"
+          aria-label={title}
           className="w-72 shrink-0 flex flex-col snap-start rounded-xl bg-slate-100 transition-shadow duration-200"
           style={isOver ? { boxShadow: `inset 0 0 0 2px ${barColor}` } : undefined}
         >
