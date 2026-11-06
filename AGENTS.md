@@ -264,6 +264,7 @@ Everything else — design rationale, history ("the old X did Y"), step-by-step 
 ### Test patterns
 
 - **Backend handlers:** mock service at the interface boundary (`MockBoardService`, `MockPlanningService`, `MockActivityRecorder` ใน `internal/service/mock/`). อย่า mock `pgx` ตรง ๆ — service layer คือ test seam.
+- **Frontend API calls:** mock ที่ network ด้วย MSW — `server.use(http.get(apiUrl("/boards/x"), ...))` จาก `src/test/server.ts`. Request ที่ไม่มี handler = test fail. ไม่ต้อง reset Zustand store เอง — `__mocks__/zustand.ts` reset ทุก store หลังแต่ละ test. ใช้ `renderWithUser` (`src/test/render.tsx`) เมื่อต้อง click/type.
 - **Service-layer integration (real DB):** ใช้ `internal/testutil` (testcontainers-go) สำหรับ critical-path tests ที่ mock จับไม่ได้ — race condition, cross-table transaction, schema/migration drift. Pattern: `pool := testutil.NewTestDB(t); seed := testutil.NewSeed(t, pool)` → คืน fresh DB cloned จาก migrated template (~10ms ต่อ test). Build tag `//go:build integration` แยกไฟล์ test ออก — `make test` (CI fast path) skip, `make test-integration` รัน. ต้องการ Docker.
 - **เมื่อไหร่ต้องเขียน integration test:** mutation ที่อยู่ใน transaction ข้าม table (เช่น `PromoteItem`), permission/race ที่ mock จับไม่ได้, query ที่ใช้ Postgres-specific feature (FOR UPDATE, advisory lock, JSON ops). ของอื่นยังคง mock service interface ตามเดิม.
 - **Test naming:** `TestFunctionName_Scenario_ExpectedResult` (ตัวอย่าง: `TestPromoteItem_DroppedItem_Returns422`).
