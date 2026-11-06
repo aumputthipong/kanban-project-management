@@ -76,6 +76,10 @@ typecheck: ## tsc --noEmit
 test-fe: ## Frontend unit tests (vitest)
 	cd frontend && npm test -- --run
 
+.PHONY: test-fe-cover
+test-fe-cover: ## Frontend tests + coverage (frontend/coverage/index.html)
+	cd frontend && npm run test:coverage
+
 .PHONY: test-e2e
 test-e2e: ## Playwright e2e; starts backend + frontend itself (needs Postgres: make dev, browsers: npx playwright install chromium)
 	cd frontend && npx playwright test
