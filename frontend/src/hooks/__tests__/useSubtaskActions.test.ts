@@ -99,7 +99,10 @@ describe("handleToggleSubtask", () => {
   });
 
   it("unticks and toasts when the server fails", async () => {
-    server.use(http.patch(apiUrl("/cards/c1/subtasks/s1"), fail(500)));
+    server.use(
+      http.patch(apiUrl("/cards/c1/subtasks/s1"), fail(500)),
+      http.get(apiUrl("/cards/c1/subtasks"), () => HttpResponse.json([makeSubtask({ id: "s1" })]))
+    );
     await actions().handleToggleSubtask("c1", "s1", false);
     expect(subtasks()[0].is_done).toBe(false);
     expect(toastMessages()).toEqual(["อัปเดต subtask ไม่สำเร็จ"]);
@@ -185,5 +188,63 @@ describe("handleDeleteSubtask", () => {
     vi.useRealTimers();
     await waitFor(() => expect(subtasks()).toHaveLength(1));
     expect(toastMessages()).toEqual(["ลบ subtask ไม่สำเร็จ"]);
+  });
+});
+
+describe("failure edge cases", () => {
+  it("shows one toast when the rename fails and the reload fails too", async () => {
+    server.use(
+      http.patch(apiUrl("/cards/c1/subtasks/s1"), fail(500)),
+      http.get(apiUrl("/cards/c1/subtasks"), fail(500))
+    );
+    await actions().handleUpdateSubtaskTitle("c1", "s1", "Renamed");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(toastMessages()).toEqual(["เปลี่ยนชื่อ subtask ไม่สำเร็จ"]);
+  });
+
+  it("shows one toast when the delete fails and the reload fails too", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    server.use(
+      http.delete(apiUrl("/cards/c1/subtasks/s1"), fail(500)),
+      http.get(apiUrl("/cards/c1/subtasks"), fail(500))
+    );
+    actions().handleDeleteSubtask("c1", "s1");
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    vi.useRealTimers();
+    await waitFor(() => expect(toastMessages()).toEqual(["ลบ subtask ไม่สำเร็จ"]));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(toastMessages()).toEqual(["ลบ subtask ไม่สำเร็จ"]);
+  });
+
+  it("treats a 404 on delete as already deleted", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    server.use(http.delete(apiUrl("/cards/c1/subtasks/s1"), fail(404)));
+    actions().handleDeleteSubtask("c1", "s1");
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    vi.useRealTimers();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(toastMessages()).not.toContain("ลบ subtask ไม่สำเร็จ");
+    expect(subtasks()).toHaveLength(0);
+  });
+
+  it("reloads from the server after a failed tick, so a teammate's tick survives", async () => {
+    server.use(
+      http.patch(apiUrl("/cards/c1/subtasks/s1"), fail(500)),
+      http.get(apiUrl("/cards/c1/subtasks"), () =>
+        HttpResponse.json([makeSubtask({ id: "s1", card_id: "c1", is_done: true })])
+      )
+    );
+    await actions().handleToggleSubtask("c1", "s1", false);
+    await waitFor(() => expect(subtasks()[0].is_done).toBe(true));
+    expect(toastMessages()).toEqual(["อัปเดต subtask ไม่สำเร็จ"]);
+  });
+
+  it("stays quiet when the session expired", async () => {
+    server.use(
+      http.post(apiUrl("/cards/c1/subtasks"), fail(401)),
+      http.post(apiUrl("/auth/refresh"), fail(401))
+    );
+    await actions().handleAddSubtask("c1", "New");
+    expect(toastMessages()).toEqual([]);
   });
 });

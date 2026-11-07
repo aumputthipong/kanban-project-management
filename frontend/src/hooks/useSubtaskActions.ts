@@ -1,21 +1,22 @@
 import { useCallback } from "react";
 import { useBoardStore } from "@/store/useBoardStore";
 import { useToastStore } from "@/store/useToastStore";
-import { apiClient, ApiError } from "@/lib/apiClient";
+import { apiClient, ApiError, toastFailure } from "@/lib/apiClient";
 import type { Subtask } from "@/types/board";
 
-// 403 is skipped — apiClient has already toasted it.
-function toastFailure(err: unknown, message: string) {
-  if (err instanceof ApiError && err.status === 403) return;
-  useToastStore.getState().show({ message, duration: 4000 });
-}
+const loadSubtasks = async (cardId: string) => {
+  const data = await apiClient<Subtask[]>(`/cards/${cardId}/subtasks`);
+  useBoardStore.getState().setSubtasksToCard(cardId, data);
+};
+
+// The caller already toasted its own failure; one message is enough.
+const resyncQuietly = (cardId: string) => loadSubtasks(cardId).catch(() => {});
 
 export function useSubtaskActions() {
   // Stable identity — consumers put this in effect deps.
   const fetchSubtasks = useCallback(async (cardId: string) => {
     try {
-      const data = await apiClient<Subtask[]>(`/cards/${cardId}/subtasks`);
-      useBoardStore.getState().setSubtasksToCard(cardId, data);
+      await loadSubtasks(cardId);
     } catch (err) {
       toastFailure(err, "โหลด subtask ไม่สำเร็จ");
     }
@@ -55,6 +56,8 @@ export function useSubtaskActions() {
       });
     } catch (err) {
       useBoardStore.getState().updateSubtaskInCard(cardId, subtaskId, { is_done: currentStatus });
+      // A boolean can't tell our tick from a teammate's; ask the server.
+      resyncQuietly(cardId);
       toastFailure(err, "อัปเดต subtask ไม่สำเร็จ");
     }
   };
@@ -85,8 +88,9 @@ export function useSubtaskActions() {
       try {
         await apiClient(`/cards/${cardId}/subtasks/${subtaskId}`, { method: "DELETE" });
       } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return;
         useToastStore.getState().dismiss(toastId);
-        fetchSubtasks(cardId);
+        resyncQuietly(cardId);
         toastFailure(err, "ลบ subtask ไม่สำเร็จ");
       }
     }, 5000);
@@ -106,7 +110,7 @@ export function useSubtaskActions() {
         data: { title: newTitle.trim() },
       });
     } catch (err) {
-      fetchSubtasks(cardId);
+      resyncQuietly(cardId);
       toastFailure(err, "เปลี่ยนชื่อ subtask ไม่สำเร็จ");
     }
   };

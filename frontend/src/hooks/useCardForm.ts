@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Card, BoardMember, Tag } from "@/types/board";
 import { API_URL } from "@/lib/constants";
-import { FormState } from "../components/board/card-modal/CardDetailModal";
+import type { CardSaveHandler, FormState } from "../components/board/card-modal/CardDetailModal";
 
 function buildInitialForm(card: Card): FormState {
   return {
@@ -31,7 +31,7 @@ export function useCardForm(
   card: Card,
   boardId: string,
   isOpen: boolean,
-  onCommit?: (form: FormState, field: keyof FormState) => void,
+  onCommit?: (form: FormState, field: keyof FormState) => ReturnType<CardSaveHandler>,
 ) {
   const [form, setForm] = useState<FormState>(() => buildInitialForm(card));
 
@@ -59,9 +59,21 @@ export function useCardForm(
       return;
     }
     if (fieldEqual(field, cur, committedRef.current)) return;
-    committedRef.current = { ...committedRef.current, [field]: cur[field] };
+    const previous = committedRef.current;
+    committedRef.current = { ...previous, [field]: cur[field] };
     setError(null);
-    onCommit?.(cur, field);
+    onCommit?.(cur, field)?.then((saved) => {
+      if (saved) return;
+      // Leave anything the user typed or committed after this attempt.
+      if (fieldEqual(field, committedRef.current, cur)) {
+        committedRef.current = { ...committedRef.current, [field]: previous[field] };
+      }
+      if (fieldEqual(field, formRef.current, cur)) {
+        const reverted = { ...formRef.current, [field]: previous[field] };
+        formRef.current = reverted;
+        setForm(reverted);
+      }
+    });
   }, [card.title, onCommit]);
 
   useEffect(() => {

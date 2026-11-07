@@ -1,27 +1,25 @@
 import { useBoardStore } from "@/store/useBoardStore";
 import { POSITION_GAP } from "@/utils/boardPosition";
-import { apiClient, ApiError } from "@/lib/apiClient";
-import { useToastStore } from "@/store/useToastStore";
+import { apiClient, toastFailure } from "@/lib/apiClient";
 import { buildCardFieldUpdate, type CardField } from "@/lib/cardPatch";
 import type { Card, CardUpdateForm, Column } from "@/types/board";
 
-// 403 is skipped — apiClient has already toasted it.
 function revertWith(snapshot: Column[], message: string) {
   return (err: unknown) => {
     useBoardStore.getState().setColumns(snapshot);
-    if (err instanceof ApiError && err.status === 403) return;
-    useToastStore.getState().show({ message, duration: 4000 });
+    toastFailure(err, message);
   };
 }
 
-// Only the patched keys, so a newer broadcast to other fields survives.
+// Skips keys changed since our write — a newer edit or broadcast wins.
 function restoreFields(cardId: string, before: Card | undefined, patch: Partial<Card>) {
   if (!before) return;
   const { columns, updateCard } = useBoardStore.getState();
   const latest = columns.flatMap((c) => c.cards).find((c) => c.id === cardId);
   if (!latest) return;
-  const keys = Object.keys(patch) as (keyof Card)[];
-  updateCard({ ...latest, ...Object.fromEntries(keys.map((k) => [k, before[k]])) });
+  const stillOurs = (Object.keys(patch) as (keyof Card)[]).filter((k) => latest[k] === patch[k]);
+  if (stillOurs.length === 0) return;
+  updateCard({ ...latest, ...Object.fromEntries(stillOurs.map((k) => [k, before[k]])) });
 }
 
 export function useCardActions() {
@@ -89,10 +87,7 @@ export function useCardActions() {
           completed_subtasks: 0,
         });
       })
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 403) return;
-        useToastStore.getState().show({ message: "สร้างการ์ดไม่สำเร็จ", duration: 4000 });
-      });
+      .catch((err) => toastFailure(err, "สร้างการ์ดไม่สำเร็จ"));
   };
 
   const handleChangeColumn = (cardId: string, toColumnId: string) => {
@@ -125,22 +120,26 @@ export function useCardActions() {
     );
   };
 
-  const handleUpdateCard = (cardId: string, form: CardUpdateForm, field: CardField) => {
+  /** Resolves false when the save failed and the store was reverted. */
+  const handleUpdateCard = (
+    cardId: string,
+    form: CardUpdateForm,
+    field: CardField,
+  ): Promise<boolean> => {
     const { boardMembers, columns, updateCard } = useBoardStore.getState();
     const current = columns.flatMap((c) => c.cards).find((c) => c.id === cardId);
     const { body, patch } = buildCardFieldUpdate(form, field, boardMembers);
     // Patch the store's copy, not the form — other fields may be newer.
     if (current) updateCard({ ...current, ...patch });
 
-    // apiClient, not raw fetch: raw fetch silently resolves on 4xx.
-    apiClient(`/cards/${cardId}`, { method: "PATCH", data: body }).catch((err) => {
-      restoreFields(cardId, current, patch);
-      if (err instanceof ApiError && err.status === 403) return; // apiClient already toasted
-      useToastStore.getState().show({
-        message: "บันทึกการ์ดไม่สำเร็จ — ลองอีกครั้ง",
-        duration: 4000,
-      });
-    });
+    return apiClient(`/cards/${cardId}`, { method: "PATCH", data: body }).then(
+      () => true,
+      (err) => {
+        restoreFields(cardId, current, patch);
+        toastFailure(err, "บันทึกการ์ดไม่สำเร็จ — ลองอีกครั้ง");
+        return false;
+      },
+    );
   };
 
   return { handleToggleDone, handleAddCard, handleChangeColumn, handleDeleteCard, handleUpdateCard };

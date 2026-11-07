@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Play } from "lucide-react";
-import { ApiError, apiClient } from "@/lib/apiClient";
+import { ApiError, apiClient, isHandledByApiClient } from "@/lib/apiClient";
 import { useToastStore } from "@/store/useToastStore";
 import type { DemoSession } from "@/types/demo";
 
@@ -90,8 +90,7 @@ export function TryDemoButton({
     } catch (err) {
       clearSlowNotice();
       setIsStarting(false);
-      // apiClient already toasts 403.
-      if (err instanceof ApiError && err.status === 403) return;
+      if (isHandledByApiClient(err)) return;
       const rateLimited = err instanceof ApiError && err.status === 429;
       showToast({
         message: failureMessage(err),

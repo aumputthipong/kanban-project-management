@@ -13,6 +13,17 @@ export class ApiError extends Error {
   }
 }
 
+/** True when apiClient already dealt with the error: 403 toast, or 401 login redirect. */
+export function isHandledByApiClient(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 401 || err.status === 403);
+}
+
+/** Toasts `message` unless apiClient already dealt with the error. */
+export function toastFailure(err: unknown, message: string) {
+  if (isHandledByApiClient(err)) return;
+  useToastStore.getState().show({ message, duration: 4000 });
+}
+
 const REFRESH_ENDPOINT = "/auth/refresh";
 
 // Single-flight: concurrent 401s share one refresh call.

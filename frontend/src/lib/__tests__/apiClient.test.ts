@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { http, HttpResponse } from "msw";
-import { apiClient, ApiError, __resetRefreshStateForTests } from "@/lib/apiClient";
+import {
+  apiClient,
+  ApiError,
+  isHandledByApiClient,
+  toastFailure,
+  __resetRefreshStateForTests,
+} from "@/lib/apiClient";
 import { useToastStore } from "@/store/useToastStore";
 import { server, apiUrl } from "@/test/server";
 
@@ -161,4 +167,21 @@ describe("apiClient session refresh", () => {
     });
     expect(refreshes).toBe(1);
   });
+});
+
+describe("toastFailure", () => {
+  it.each([401, 403])("stays quiet for %i, which apiClient already handled", (status) => {
+    expect(isHandledByApiClient(new ApiError(status, "x"))).toBe(true);
+    toastFailure(new ApiError(status, "x"), "ไม่สำเร็จ");
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+  });
+
+  it.each([new ApiError(500, "x"), new ApiError(404, "x"), new TypeError("network")])(
+    "toasts the caller's message for %s",
+    (err) => {
+      expect(isHandledByApiClient(err)).toBe(false);
+      toastFailure(err, "ไม่สำเร็จ");
+      expect(useToastStore.getState().toasts.map((t) => t.message)).toEqual(["ไม่สำเร็จ"]);
+    }
+  );
 });
