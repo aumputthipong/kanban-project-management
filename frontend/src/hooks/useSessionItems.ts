@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToastStore } from "@/store/useToastStore";
 import { planningApi } from "@/lib/planningApi";
+import { ApiError, isHandledByApiClient, toastFailure } from "@/lib/apiClient";
 import type {
   PlanningItem,
   PlanningItemStatus,
@@ -50,8 +51,8 @@ export function useSessionItems(
         setItems(d.items);
         setSavedAt(d.updated_at);
       })
-      .catch(() => {
-        if (cancelled) return;
+      .catch((err: unknown) => {
+        if (cancelled || (err instanceof ApiError && err.status === 401)) return;
         showToast({ message: "โหลดบันทึกไม่ได้", duration: 4000 });
         router.push(`/board/${boardId}/planning`);
       });
@@ -92,11 +93,9 @@ export function useSessionItems(
           position: patch.position,
           implementation_note: patch.implementation_note ?? undefined,
         })
-        .catch(() => {
-          showToast({ message: "บันทึกไม่สำเร็จ", duration: 4000 });
-        });
+        .catch((err: unknown) => toastFailure(err, "บันทึกไม่สำเร็จ"));
     },
-    [showToast],
+    [],
   );
 
   const commitNew = useCallback(
@@ -123,12 +122,12 @@ export function useSessionItems(
           title: trimmed,
         });
         setItems((prev) => prev.map((it) => (it.id === tempId ? real : it)));
-      } catch {
+      } catch (err) {
         setItems((prev) => prev.filter((it) => it.id !== tempId));
-        showToast({ message: "เพิ่มไม่ได้ ลองอีกครั้ง", duration: 4000 });
+        toastFailure(err, "เพิ่มไม่ได้ ลองอีกครั้ง");
       }
     },
-    [sessionId, showToast],
+    [sessionId],
   );
 
   const toggleStatus = useCallback(
@@ -155,11 +154,12 @@ export function useSessionItems(
           setItems((prev) =>
             prev.map((it) => (it.id === item.id ? { ...it, type: previous } : it)),
           );
-          const message =
-            err instanceof Error && err.message
-              ? err.message
-              : "เปลี่ยนประเภทไม่ได้";
-          showToast({ message, duration: 4000 });
+          toastFailure(
+            err,
+            err instanceof ApiError && err.status === 409
+              ? "Note นี้ส่งเข้า Board แล้ว เปลี่ยนประเภทไม่ได้"
+              : "เปลี่ยนประเภทไม่ได้",
+          );
         });
     },
     [showToast],
@@ -170,12 +170,12 @@ export function useSessionItems(
       setItems((prev) => prev.filter((it) => it.id !== item.id));
       try {
         await planningApi.deleteItem(item.id);
-      } catch {
+      } catch (err) {
         setItems((prev) => [...prev, item]);
-        showToast({ message: "ลบไม่ได้ ลองอีกครั้ง", duration: 4000 });
+        toastFailure(err, "ลบไม่ได้ ลองอีกครั้ง");
       }
     },
-    [showToast],
+    [],
   );
 
   const promoteOne = useCallback(
@@ -186,11 +186,8 @@ export function useSessionItems(
           prev.map((cur) => (cur.id === item.id ? res.item : cur)),
         );
         showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
-      } catch {
-        showToast({
-          message: `ส่งเข้า Board ไม่ได้: ${item.title}`,
-          duration: 4000,
-        });
+      } catch (err) {
+        toastFailure(err, `ส่งเข้า Board ไม่ได้: ${item.title}`);
       }
     },
     [showToast],
@@ -204,23 +201,22 @@ export function useSessionItems(
       );
       if (targets.length === 0) return;
       // Sequential to keep board card positions stable.
+      let sent = 0;
       for (const it of targets) {
         try {
           const res = await planningApi.promoteItem(it.id);
           setItems((prev) =>
             prev.map((cur) => (cur.id === it.id ? res.item : cur)),
           );
-        } catch {
-          showToast({
-            message: `ส่งเข้า Board ไม่ได้: ${it.title}`,
-            duration: 4000,
-          });
+          sent++;
+        } catch (err) {
+          toastFailure(err, `ส่งเข้า Board ไม่ได้: ${it.title}`);
+          if (isHandledByApiClient(err)) break;
         }
       }
-      showToast({
-        message: `ส่งเข้า Board แล้ว ${targets.length} รายการ`,
-        duration: 3000,
-      });
+      if (sent > 0) {
+        showToast({ message: `ส่งเข้า Board แล้ว ${sent} รายการ`, duration: 3000 });
+      }
     },
     [items, showToast],
   );

@@ -1,7 +1,7 @@
 // Lazy: nothing loads until load(). See docs/ARCHITECTURE.md "Planning section".
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useToastStore } from "@/store/useToastStore";
 import { planningApi } from "@/lib/planningApi";
+import { toastFailure } from "@/lib/apiClient";
 import type { PlanningComment } from "@/types/planning";
 
 interface State {
@@ -14,7 +14,6 @@ const tempId = () => `__pending_${Math.random().toString(36).slice(2)}`;
 
 export function usePlanningComments(itemId: string, currentUserId: string | null) {
   const [state, setState] = useState<State>({ comments: [], isLoading: false, loaded: false });
-  const showToast = useToastStore((s) => s.show);
   // ref, not state — a render-triggering flag here would cascade.
   const requestRef = useRef(0);
 
@@ -25,12 +24,12 @@ export function usePlanningComments(itemId: string, currentUserId: string | null
       const rows = await planningApi.listComments(itemId);
       if (requestRef.current !== reqId) return;
       setState({ comments: rows, isLoading: false, loaded: true });
-    } catch {
+    } catch (err) {
       if (requestRef.current !== reqId) return;
       setState((prev) => ({ ...prev, isLoading: false }));
-      showToast({ message: "โหลดความคิดเห็นไม่ได้ ลองอีกครั้ง", duration: 4000 });
+      toastFailure(err, "โหลดความคิดเห็นไม่ได้ ลองอีกครั้ง");
     }
-  }, [itemId, showToast]);
+  }, [itemId]);
 
   // Refetch on tab focus instead of polling.
   useEffect(() => {
@@ -43,6 +42,14 @@ export function usePlanningComments(itemId: string, currentUserId: string | null
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [state.loaded, load]);
+
+  const restore = useCallback((previous: PlanningComment | undefined) => {
+    if (!previous) return;
+    setState((prev) => ({
+      ...prev,
+      comments: prev.comments.map((c) => (c.id === previous.id ? previous : c)),
+    }));
+  }, []);
 
   const create = useCallback(
     async (body: string) => {
@@ -63,81 +70,67 @@ export function usePlanningComments(itemId: string, currentUserId: string | null
       setState((prev) => ({ ...prev, comments: [...prev.comments, placeholder] }));
       try {
         const real = await planningApi.createComment(itemId, trimmed);
-        setState((prev) => ({
-          ...prev,
-          comments: prev.comments.map((c) => (c.id === placeholderId ? real : c)),
-        }));
-      } catch {
+        // A reload may have replaced the list (and the placeholder) meanwhile.
+        setState((prev) => {
+          const rest = prev.comments.filter((c) => c.id !== placeholderId && c.id !== real.id);
+          const at = prev.comments.findIndex((c) => c.id === placeholderId);
+          const comments = [...rest];
+          comments.splice(at < 0 ? rest.length : at, 0, real);
+          return { ...prev, comments };
+        });
+      } catch (err) {
         setState((prev) => ({
           ...prev,
           comments: prev.comments.filter((c) => c.id !== placeholderId),
         }));
-        showToast({ message: "ส่งความคิดเห็นไม่สำเร็จ", duration: 4000 });
+        toastFailure(err, "ส่งความคิดเห็นไม่สำเร็จ");
       }
     },
-    [itemId, currentUserId, showToast],
+    [itemId, currentUserId],
   );
 
   const edit = useCallback(
     async (commentId: string, body: string) => {
       const trimmed = body.trim();
       if (!trimmed) return;
-      let previous: PlanningComment | undefined;
-      setState((prev) => {
-        previous = prev.comments.find((c) => c.id === commentId);
-        return {
-          ...prev,
-          comments: prev.comments.map((c) =>
-            c.id === commentId ? { ...c, body: trimmed, updated_at: new Date().toISOString() } : c,
-          ),
-        };
-      });
+      const previous = state.comments.find((c) => c.id === commentId);
+      setState((prev) => ({
+        ...prev,
+        comments: prev.comments.map((c) =>
+          c.id === commentId ? { ...c, body: trimmed, updated_at: new Date().toISOString() } : c,
+        ),
+      }));
       try {
         const updated = await planningApi.editComment(commentId, trimmed);
         setState((prev) => ({
           ...prev,
           comments: prev.comments.map((c) => (c.id === commentId ? updated : c)),
         }));
-      } catch {
-        if (previous) {
-          const restore = previous;
-          setState((prev) => ({
-            ...prev,
-            comments: prev.comments.map((c) => (c.id === commentId ? restore : c)),
-          }));
-        }
-        showToast({ message: "แก้ไม่สำเร็จ", duration: 4000 });
+      } catch (err) {
+        restore(previous);
+        toastFailure(err, "แก้ไม่สำเร็จ");
       }
     },
-    [showToast],
+    [state.comments, restore],
   );
 
   const remove = useCallback(
     async (commentId: string) => {
-      let previous: PlanningComment | undefined;
-      setState((prev) => {
-        previous = prev.comments.find((c) => c.id === commentId);
-        return {
-          ...prev,
-          comments: prev.comments.map((c) =>
-            c.id === commentId ? { ...c, body: null, deleted_at: new Date().toISOString() } : c,
-          ),
-        };
-      });
+      const previous = state.comments.find((c) => c.id === commentId);
+      setState((prev) => ({
+        ...prev,
+        comments: prev.comments.map((c) =>
+          c.id === commentId ? { ...c, body: null, deleted_at: new Date().toISOString() } : c,
+        ),
+      }));
       try {
         await planningApi.deleteComment(commentId);
-      } catch {
-        if (previous) {
-          const restore = previous;
-          setState((prev) => ({
-            ...prev,
-            comments: prev.comments.map((c) => (c.id === commentId ? restore : c)),
-          }));
-        }
-        showToast({ message: "ลบไม่สำเร็จ", duration: 4000 });
+      } catch (err) {
+        restore(previous);
+        toastFailure(err, "ลบไม่สำเร็จ");
       }
     },
-    [showToast],
+    [state.comments, restore],
   );
 
   return {
