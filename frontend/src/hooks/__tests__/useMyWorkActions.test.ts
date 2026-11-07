@@ -101,6 +101,13 @@ describe("handleComplete", () => {
 
   it("puts the card back on undo and never calls the server", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout"] });
+    let completed = 0;
+    server.use(
+      http.post(apiUrl("/my-tasks/w1/complete"), () => {
+        completed++;
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
     const { result } = setup();
     act(() => result.current.handleComplete("w1"));
     act(() => useToastStore.getState().toasts[0].onAction?.());
@@ -108,6 +115,9 @@ describe("handleComplete", () => {
     expect(result.current.counts).toMatchObject({ today: 2, total: 2 });
     expect(result.current.doneToday).toBe(0);
     await act(() => vi.advanceTimersByTimeAsync(5000));
+    vi.useRealTimers();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(completed).toBe(0);
   });
 
   it("ignores a second click while the first is pending", () => {

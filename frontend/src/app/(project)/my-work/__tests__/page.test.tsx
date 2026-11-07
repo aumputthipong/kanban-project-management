@@ -5,6 +5,7 @@ import MyWorkPage from "@/app/(project)/my-work/page";
 import { ToastContainer } from "@/components/ui/ToastContainer";
 import { server, apiUrl } from "@/test/server";
 import { renderWithUser } from "@/test/render";
+import { relativeDueDate } from "@/lib/myWorkApi";
 import type { MyWorkCard } from "@/types/myWork";
 
 beforeEach(() => {
@@ -34,7 +35,7 @@ const todayCard = (id: string, title: string): MyWorkCard => ({
   board_name: "Board",
   column_name: "Todo",
   priority: null,
-  due_date: "2026-11-07",
+  due_date: relativeDueDate(0),
   estimated_hours: null,
   status: "todo",
   group: "today",

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { CreateTaskModal } from "@/components/board/task-board/CreateTaskModal";
 import { useCardActions } from "@/hooks/useCardActions";
@@ -69,6 +69,10 @@ describe("CreateTaskModal", () => {
     await user.click(screen.getByRole("button", { name: /Bee$/ }));
     await user.click(screen.getByRole("button", { name: /High/ }));
     await user.selectOptions(screen.getByRole("combobox", { name: "Column" }), "doing");
+    await user.click(screen.getByRole("button", { name: /Pick date/ }));
+    fireEvent.change(screen.getByLabelText("Due date", { selector: "input" }), {
+      target: { value: "2026-12-24" },
+    });
     await user.click(createButton());
 
     expect(onClose).toHaveBeenCalledOnce();
@@ -79,10 +83,15 @@ describe("CreateTaskModal", () => {
       position: 65536,
       assignee_id: "bee",
       priority: "high",
+      due_date: "2026-12-24",
       description: "For the API",
       subtasks: ["Outline"],
     });
-    expect(findCard("new")).toMatchObject({ assignee_name: "Bee", total_subtasks: 1 });
+    expect(findCard("new")).toMatchObject({
+      assignee_name: "Bee",
+      due_date: "2026-12-24",
+      total_subtasks: 1,
+    });
   });
 
   it("sends no assignee when Unassigned is picked, and Enter submits", async () => {
@@ -108,6 +117,6 @@ describe("CreateTaskModal", () => {
     const { user } = renderWithUser(<Harness />);
     await user.type(screen.getByRole("textbox", { name: "Title" }), "Doomed{Enter}");
     await waitFor(() => expect(toastMessages()).toEqual(["สร้างการ์ดไม่สำเร็จ"]));
-    expect(findCard("new")).toBeUndefined();
+    expect(useBoardStore.getState().columns.flatMap((c) => c.cards)).toEqual([]);
   });
 });

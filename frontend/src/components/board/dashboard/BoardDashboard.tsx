@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useBoardStore } from "@/store/useBoardStore";
 import { useBoardActions } from "@/hooks/useBoardActions";
+import { useBoardRole } from "@/hooks/useBoardRole";
+import { canEditCard } from "@/lib/permissions";
 import { CardDetailModal } from "@/components/board/card-modal/CardDetailModal";
 import type { Card } from "@/types/board";
 import { BarChart3, Plus } from "lucide-react";
@@ -25,19 +27,6 @@ import { TeamTabContent } from "../overview/TeamTabContent";
 // Tabs
 const TABS = ["Overview", "Tasks", "Team"] as const;
 type Tab = (typeof TABS)[number];
-
-// Helpers
-function computeCanEdit(
-  card: Card,
-  currentUserId: string,
-  boardMembers: { user_id: string; role: string }[],
-) {
-  if (!currentUserId) return false;
-  if (card.created_by === currentUserId) return true;
-  if (card.assignee_id === currentUserId) return true;
-  const member = boardMembers.find((m) => m.user_id === currentUserId);
-  return member ? member.role === "owner" || member.role === "manager" : false;
-}
 
 // Skeleton
 function DashboardSkeleton() {
@@ -67,7 +56,7 @@ export function BoardDashboard({ boardId }: BoardDashboardProps) {
   const stats = useDashboardStats();
   const isLoading = useBoardStore((s) => s.isLoading);
   const currentUserId = useBoardStore((s) => s.currentUserId);
-  const boardMembers = useBoardStore((s) => s.boardMembers);
+  const role = useBoardRole();
   const columns = useBoardStore((s) => s.columns);
   const { handleUpdateCard, handleDeleteCard, handleAddSubtask } =
     useBoardActions(boardId);
@@ -118,7 +107,14 @@ export function BoardDashboard({ boardId }: BoardDashboardProps) {
             setSelectedCard(null);
           }}
           onAddSubtask={handleAddSubtask}
-          canEdit={computeCanEdit(selectedCard, currentUserId, boardMembers)}
+          canEdit={
+            !!currentUserId &&
+            canEditCard(
+              role,
+              selectedCard.created_by === currentUserId,
+              selectedCard.assignee_id === currentUserId,
+            )
+          }
         />
       )}
 
