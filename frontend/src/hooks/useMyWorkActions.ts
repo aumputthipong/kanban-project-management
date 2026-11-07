@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { completeMyTask, fetchMyWork, snoozeCardDueDate } from "@/lib/myWorkApi";
+import { isHandledByApiClient } from "@/lib/apiClient";
 import { useToastStore } from "@/store/useToastStore";
 import type {
   MyWorkCard,
@@ -41,6 +42,13 @@ export function useMyWorkActions({
   setError,
 }: UseMyWorkActionsArgs) {
   const showToast = useToastStore((s) => s.show);
+
+  const reportFailure = useCallback(
+    (err: unknown, message: string) => {
+      if (!isHandledByApiClient(err)) setError(message);
+    },
+    [setError],
+  );
 
   // Session-local: the API has no "done today".
   const [doneToday, setDoneToday] = useState(0);
@@ -88,10 +96,10 @@ export function useMyWorkActions({
         await completeMyTask(cardId);
       } catch (err) {
         restorePending(entry.card);
-        setError(err instanceof Error ? err.message : "ทำเครื่องหมายเสร็จไม่สำเร็จ");
+        reportFailure(err, "ทำเครื่องหมายเสร็จไม่สำเร็จ");
       }
     },
-    [restorePending, setError],
+    [restorePending, reportFailure],
   );
 
   const undoComplete = useCallback(
@@ -148,10 +156,10 @@ export function useMyWorkActions({
         setData(refreshed);
         setCounts(refreshed.counts);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "ย้อนกลับไม่สำเร็จ");
+        reportFailure(err, "ย้อนกลับไม่สำเร็จ");
       }
     },
-    [setCounts, setData, setError],
+    [reportFailure, setCounts, setData],
   );
 
   const handleSnooze = useCallback(
@@ -173,10 +181,10 @@ export function useMyWorkActions({
         });
       } catch (err) {
         setData(prev);
-        setError(err instanceof Error ? err.message : "เลื่อนวันไม่สำเร็จ");
+        reportFailure(err, "เลื่อนวันไม่สำเร็จ");
       }
     },
-    [data, setCounts, setData, setError, showToast, undoSnooze],
+    [data, reportFailure, setCounts, setData, showToast, undoSnooze],
   );
 
   return { doneToday, filterPending, handleComplete, handleSnooze };
