@@ -1,14 +1,11 @@
 import { useBoardStore } from "@/store/useBoardStore";
-import { apiClient, ApiError } from "@/lib/apiClient";
-import { useToastStore } from "@/store/useToastStore";
+import { apiClient, toastFailure } from "@/lib/apiClient";
 import type { Column } from "@/types/board";
 
-// 403 is skipped — apiClient has already toasted it.
 function revertWith(snapshot: Column[], message: string) {
   return (err: unknown) => {
     useBoardStore.getState().setColumns(snapshot);
-    if (err instanceof ApiError && err.status === 403) return;
-    useToastStore.getState().show({ message, duration: 4000 });
+    toastFailure(err, message);
   };
 }
 
@@ -64,8 +61,7 @@ export function useColumnActions(boardId: string) {
       });
       useBoardStore.getState().addColumnToStore({ ...column, cards: [] });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 403) return;
-      useToastStore.getState().show({ message: "สร้างคอลัมน์ไม่สำเร็จ", duration: 4000 });
+      toastFailure(err, "สร้างคอลัมน์ไม่สำเร็จ");
     }
   };
 

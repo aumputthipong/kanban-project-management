@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Crown, Loader2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ApiError, apiClient } from "@/lib/apiClient";
+import { apiClient, isHandledByApiClient } from "@/lib/apiClient";
 import { useBoardStore } from "@/store/useBoardStore";
 import { useToastStore } from "@/store/useToastStore";
 import type { BoardMember } from "@/types/board";
@@ -32,7 +32,7 @@ export function TransferOwnershipRow({ boardId }: { boardId: string }) {
       setBoardMembers(Array.isArray(fresh) ? fresh.filter(Boolean) : []);
       showToast({ message: `โอนสิทธิ์ Owner ให้ ${target.full_name} แล้ว — ตอนนี้คุณเป็น Manager`, duration: 5000 });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 403) return;
+      if (isHandledByApiClient(err)) return;
       showToast({ message: err instanceof Error ? err.message : "โอนสิทธิ์ไม่สำเร็จ", duration: 4000 });
     } finally {
       setTransferring(false);

@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useCardHighlightStore } from "@/store/useCardHighlightStore";
 import type { Card } from "@/types/board";
-import type { FormState } from "../card-modal/CardDetailModal";
+import type { CardSaveHandler } from "../card-modal/CardDetailModal";
 
 const CardDetailModal = dynamic(
   () =>
@@ -25,7 +25,7 @@ interface CardProps {
   card: Card;
   boardId: string;
   onDeleteCard: (cardId: string) => void;
-  onSaveCard: (cardId: string, form: FormState, field: keyof FormState) => void;
+  onSaveCard: CardSaveHandler;
 }
 
 export const TaskCard = memo(function TaskCard({

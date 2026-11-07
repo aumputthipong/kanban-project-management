@@ -149,7 +149,7 @@ Constants live in [`backend/internal/service/activity_service.go`](backend/inter
 
 - **State:** ใช้ Zustand store ที่มี (`useBoardStore`, `useToastStore`, `useActivityStore`). **ห้าม** สร้าง global Context สำหรับ board data — re-render ทั้ง tree.
 - **Optimistic UI pattern:** apply local → fire API → revert ถ้าพัง. ดู `useBoardStore.moveCard` เป็น reference.
-- **API client:** ใช้ `lib/apiClient` ที่มีอยู่ สำหรับ API call ฝั่ง client (raw `fetch` จะข้าม silent refresh กับ 403 toast). มัน post toast เอง**เฉพาะ 403** — catch ต้องข้าม 403 (ไม่งั้นซ้อนสอง toast) แล้วขึ้นข้อความเฉพาะของตัวเองสำหรับ error อื่น. ดู `revertWith` ใน `useCardActions`.
+- **API client:** ใช้ `lib/apiClient` ที่มีอยู่ สำหรับ API call ฝั่ง client (raw `fetch` จะข้าม silent refresh กับ 403 toast). มันจัดการ 403 (toast) และ 401 (redirect ไป login) เอง — ใน catch ใช้ `toastFailure(err, "ข้อความไทย")` (หรือ `isHandledByApiClient(err)` ถ้าต้อง custom) จาก `lib/apiClient` ห้ามเขียนเช็ค status เอง ไม่งั้น toast ซ้อน.
 - **API URL convention:** endpoint paths ไม่มี `/api` prefix — `NEXT_PUBLIC_API_URL` รวม `/api` ให้แล้ว. เขียน `/boards/${id}/...` ไม่ใช่ `/api/boards/${id}/...` (ดู `useCardActions`, `planningApi` เป็น reference).
 - **Component size:** target **≤ 200 บรรทัด/ไฟล์**. เกินแล้ว → extract sub-components หรือ custom hook. exception ได้ถ้าเป็น coherent unit (ItemRow, useSessionItems) แต่ document เหตุผลใน commit.
 - **Thai-first copy:** UI text + toast + error message เป็นภาษาไทยที่อ่านง่าย, ไม่ใช่ jargon ภาษาอังกฤษ. type chip code (REQ/DEC/Q) เก็บไว้เพื่อ density แต่ tooltip เป็นไทย.

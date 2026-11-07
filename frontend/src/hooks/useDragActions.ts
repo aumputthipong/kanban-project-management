@@ -1,8 +1,7 @@
 import { DragEndEvent, DragOverEvent } from "@dnd-kit/core";
 import { useRef } from "react";
 import { useBoardStore } from "@/store/useBoardStore";
-import { apiClient, ApiError } from "@/lib/apiClient";
-import { useToastStore } from "@/store/useToastStore";
+import { apiClient, toastFailure } from "@/lib/apiClient";
 import {
   POSITION_GAP,
   resolveOverFromColumns,
@@ -90,8 +89,7 @@ export function useDragActions() {
       data: { column_id: overColumnId, position: newPosition },
     }).catch((err) => {
       useBoardStore.getState().setColumns(snapshot);
-      if (err instanceof ApiError && err.status === 403) return;
-      useToastStore.getState().show({ message: "ย้ายการ์ดไม่สำเร็จ", duration: 4000 });
+      toastFailure(err, "ย้ายการ์ดไม่สำเร็จ");
     });
   };
 

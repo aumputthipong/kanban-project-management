@@ -26,12 +26,19 @@ export interface FormState {
   implementation_note: string;
 }
 
+/** A returned promise resolving false means the save failed; the form rolls the field back. */
+export type CardSaveHandler = (
+  cardId: string,
+  form: FormState,
+  field: keyof FormState,
+) => void | Promise<boolean>;
+
 interface CardDetailModalProps {
   card: Card;
   boardId: string;
   isOpen: boolean;
   onClose: () => void;
-  onUpdated: (cardId: string, form: FormState, field: keyof FormState) => void;
+  onUpdated: CardSaveHandler;
   onDelete: (cardId: string) => void;
   onAddSubtask?: (cardId: string, title: string) => void;
   canEdit: boolean;

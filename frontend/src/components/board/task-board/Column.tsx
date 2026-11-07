@@ -12,7 +12,7 @@ import { CollapsedColumnStrip } from "./CollapsedColumnStrip";
 import { ColumnEmptyHint } from "./ColumnEmptyHint";
 import { CreateTaskModal } from "./CreateTaskModal";
 import type { Card, Column } from "@/types/board";
-import { FormState } from "../card-modal/CardDetailModal";
+import type { CardSaveHandler } from "../card-modal/CardDetailModal";
 import {
   ColumnOptionsModal,
   getColumnColorHex,
@@ -42,7 +42,7 @@ interface ColumnProps {
     },
   ) => void;
   onDeleteCard: (cardId: string) => void;
-  onSaveCard: (cardId: string, form: FormState, field: keyof FormState) => void;
+  onSaveCard: CardSaveHandler;
   onDeleteColumn: (columnId: string) => void;
   onUpdateColumn: (
     columnId: string,

@@ -163,4 +163,42 @@ describe("handleUpdateCard", () => {
     await waitFor(() => expect(findCard("c1")?.title).toBe("Old"));
     expect(findCard("c1")?.priority).toBe("high");
   });
+
+  it("resolves true when saved and false when reverted", async () => {
+    server.use(http.patch(apiUrl("/cards/c1"), () => HttpResponse.json({})));
+    await expect(actions().handleUpdateCard("c1", form, "title")).resolves.toBe(true);
+    server.use(http.patch(apiUrl("/cards/c1"), fail(500)));
+    await expect(actions().handleUpdateCard("c1", form, "title")).resolves.toBe(false);
+  });
+
+  it("does not undo a newer edit of the same field when an older save fails", async () => {
+    let release!: () => void;
+    let calls = 0;
+    server.use(
+      http.patch(apiUrl("/cards/c1"), async () => {
+        if (++calls === 1) {
+          await new Promise<void>((r) => (release = r));
+          return HttpResponse.json({ error: "boom" }, { status: 500 });
+        }
+        return HttpResponse.json({});
+      })
+    );
+    const first = actions().handleUpdateCard("c1", { title: "B" } as CardUpdateForm, "title");
+    await waitFor(() => expect(release).toBeDefined());
+    await actions().handleUpdateCard("c1", { title: "C" } as CardUpdateForm, "title");
+    release();
+    await first;
+    await waitFor(() => expect(toastMessages()).toHaveLength(1));
+    expect(findCard("c1")?.title).toBe("C");
+  });
+
+  it("stays quiet when the session expired and the user is sent to login", async () => {
+    server.use(
+      http.patch(apiUrl("/cards/c1"), fail(401)),
+      http.post(apiUrl("/auth/refresh"), fail(401))
+    );
+    await actions().handleUpdateCard("c1", form, "title");
+    expect(findCard("c1")?.title).toBe("Old");
+    expect(toastMessages()).toEqual([]);
+  });
 });
