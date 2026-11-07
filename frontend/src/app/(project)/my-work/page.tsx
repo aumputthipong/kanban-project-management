@@ -7,7 +7,7 @@ import { DashboardGrid, DashboardGridLoading } from "@/components/my-work/Dashbo
 import type { BoardMeta } from "@/components/my-work/boardMeta";
 import { MyWorkTaskModal } from "@/components/my-work/MyWorkTaskModal";
 import { MyWorkSkeleton } from "@/components/my-work/MyWorkSkeleton";
-import { apiClient } from "@/lib/apiClient";
+import { ApiError, apiClient } from "@/lib/apiClient";
 import { fetchMyWork } from "@/lib/myWorkApi";
 import { useMyWorkActions } from "@/hooks/useMyWorkActions";
 import type { Board } from "@/types/board";
@@ -91,7 +91,9 @@ export default function MyWorkPage() {
       })
       .catch((err: unknown) => {
         if (cancelled || controller.signal.aborted) return;
-        setError(err instanceof Error ? err.message : "โหลดงานไม่สำเร็จ");
+        // 401 is already redirecting; anything else must end the skeleton.
+        if (err instanceof ApiError && err.status === 401) return;
+        setError("โหลดงานไม่สำเร็จ");
       });
     return () => {
       cancelled = true;

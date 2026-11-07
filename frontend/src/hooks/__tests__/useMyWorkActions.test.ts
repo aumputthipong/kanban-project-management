@@ -207,7 +207,7 @@ describe("handleSnooze", () => {
     server.use(http.patch(apiUrl("/cards/w1"), fail(500)));
     const { result } = setup();
     await act(() => result.current.handleSnooze("w1", "2026-11-08", "พรุ่งนี้"));
-    expect(ids(result)).toEqual(["w1", "w2"]);
+    expect(ids(result)?.sort()).toEqual(["w1", "w2"]);
     expect(result.current.error).toBe("เลื่อนวันไม่สำเร็จ");
   });
 
@@ -215,7 +215,135 @@ describe("handleSnooze", () => {
     server.use(http.patch(apiUrl("/cards/w1"), fail(403)));
     const { result } = setup();
     await act(() => result.current.handleSnooze("w1", "2026-11-08", "พรุ่งนี้"));
-    expect(ids(result)).toEqual(["w1", "w2"]);
+    expect(ids(result)?.sort()).toEqual(["w1", "w2"]);
     expect(result.current.error).toBeNull();
+  });
+});
+
+/** A handler that waits until `open()` is called, then answers with `respond()`. */
+function gate(respond: () => Response) {
+  let open!: () => void;
+  const opened = new Promise<void>((r) => (open = r));
+  let hit = false;
+  return {
+    handler: async () => {
+      hit = true;
+      await opened;
+      return respond();
+    },
+    open: () => open(),
+    get hit() {
+      return hit;
+    },
+  };
+}
+
+describe("complete and snooze together", () => {
+  const serverView: MyWorkResponse = {
+    cards: [makeWorkCard(), makeWorkCard({ id: "w3", title: "Third", group: "later" })],
+    counts: counts({ today: 1, later: 1, total: 2 }),
+  };
+
+  it("keeps a ticked card hidden when a snooze refreshes the list", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    server.use(
+      http.patch(apiUrl("/cards/w2"), () => HttpResponse.json({})),
+      http.get(apiUrl("/my-tasks"), () => HttpResponse.json(serverView))
+    );
+    const { result } = setup();
+    act(() => result.current.handleComplete("w1"));
+    await act(() => result.current.handleSnooze("w2", "2026-12-01", "เดือนหน้า"));
+    expect(ids(result)).toEqual(["w3"]);
+    expect(result.current.counts).toMatchObject({ today: 0, later: 1, total: 1 });
+  });
+
+  it("puts back only the snoozed card when the snooze fails", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    const patch = gate(() => HttpResponse.json({ error: "x" }, { status: 500 }));
+    server.use(http.patch(apiUrl("/cards/w2"), patch.handler));
+    const { result } = setup();
+    let snooze!: Promise<void>;
+    act(() => {
+      snooze = result.current.handleSnooze("w2", "2026-12-01", "เดือนหน้า");
+    });
+    await vi.waitFor(() => expect(patch.hit).toBe(true));
+    act(() => result.current.handleComplete("w1"));
+    patch.open();
+    await act(() => snooze);
+    expect(ids(result)).toEqual(["w2"]);
+  });
+
+  it("does not list a card twice when its failed commit races a refresh", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    const commit = gate(() => HttpResponse.json({ error: "x" }, { status: 500 }));
+    server.use(
+      http.post(apiUrl("/my-tasks/w1/complete"), commit.handler),
+      http.patch(apiUrl("/cards/w2"), () => HttpResponse.json({})),
+      http.get(apiUrl("/my-tasks"), () => HttpResponse.json(serverView))
+    );
+    const { result } = setup();
+    act(() => result.current.handleComplete("w1"));
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    await vi.waitFor(() => expect(commit.hit).toBe(true));
+    await act(() => result.current.handleSnooze("w2", "2026-12-01", "เดือนหน้า"));
+    commit.open();
+    vi.useRealTimers();
+    await waitFor(() => expect(result.current.error).toBe("ทำเครื่องหมายเสร็จไม่สำเร็จ"));
+    expect(ids(result)?.filter((id) => id === "w1")).toHaveLength(1);
+    expect(result.current.counts).toEqual(serverView.counts);
+  });
+});
+
+describe("snooze edge cases", () => {
+  it("drops the counts right away and restores them on failure", async () => {
+    const patch = gate(() => HttpResponse.json({ error: "x" }, { status: 500 }));
+    server.use(http.patch(apiUrl("/cards/w1"), patch.handler));
+    const { result } = setup();
+    let snooze!: Promise<void>;
+    act(() => {
+      snooze = result.current.handleSnooze("w1", "2026-12-01", "เดือนหน้า");
+    });
+    expect(result.current.counts).toMatchObject({ today: 1, total: 1 });
+    await waitFor(() => expect(patch.hit).toBe(true));
+    patch.open();
+    await act(() => snooze);
+    expect(result.current.counts).toMatchObject({ today: 2, total: 2 });
+  });
+
+  it("treats a saved snooze as saved even if the refresh fails", async () => {
+    server.use(
+      http.patch(apiUrl("/cards/w1"), () => HttpResponse.json({})),
+      http.get(apiUrl("/my-tasks"), fail(500))
+    );
+    const { result } = setup();
+    await act(() => result.current.handleSnooze("w1", "2026-12-01", "เดือนหน้า"));
+    expect(ids(result)).toEqual(["w2"]);
+    expect(result.current.error).toBeNull();
+    expect(toastMessages()).toEqual(["เลื่อนไปเดือนหน้าแล้ว"]);
+  });
+
+  it("clears an old error once an action succeeds", async () => {
+    server.use(http.patch(apiUrl("/cards/w1"), fail(500)));
+    const { result } = setup();
+    await act(() => result.current.handleSnooze("w1", "2026-12-01", "เดือนหน้า"));
+    expect(result.current.error).toBe("เลื่อนวันไม่สำเร็จ");
+    server.use(
+      http.patch(apiUrl("/cards/w1"), () => HttpResponse.json({})),
+      http.get(apiUrl("/my-tasks"), () => HttpResponse.json(initial))
+    );
+    await act(() => result.current.handleSnooze("w1", "2026-12-01", "เดือนหน้า"));
+    expect(result.current.error).toBeNull();
+  });
+});
+
+describe("leaving the page", () => {
+  it("toasts when a completion sent on unmount fails", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    server.use(http.post(apiUrl("/my-tasks/w1/complete"), fail(500)));
+    const { result, unmount } = setup();
+    act(() => result.current.handleComplete("w1"));
+    unmount();
+    vi.useRealTimers();
+    await waitFor(() => expect(toastMessages()).toContain("ทำเครื่องหมายเสร็จไม่สำเร็จ"));
   });
 });
