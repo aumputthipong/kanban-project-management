@@ -13,7 +13,7 @@ export class ApiError extends Error {
   }
 }
 
-const REFRESH_ENDPOINT = "/api/auth/refresh";
+const REFRESH_ENDPOINT = "/auth/refresh";
 
 // Single-flight: concurrent 401s share one refresh call.
 let refreshInFlight: Promise<boolean> | null = null;

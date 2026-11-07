@@ -1,42 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useBoardStore } from "@/store/useBoardStore";
-import type { Card, Column } from "@/types/board";
-
-// Helpers
-
-function makeCard(overrides: Partial<Card> = {}): Card {
-  return {
-    id: "card-1",
-    column_id: "col-1",
-    title: "Test Card",
-    position: 65536,
-    description: null,
-    due_date: null,
-    assignee_id: null,
-    assignee_name: null,
-    priority: null,
-    estimated_hours: null,
-    is_done: false,
-    completed_at: null,
-    created_at: null,
-    created_by: null,
-    total_subtasks: 0,
-    completed_subtasks: 0,
-    ...overrides,
-  };
-}
-
-function makeColumn(overrides: Partial<Column> = {}): Column {
-  return {
-    id: "col-1",
-    title: "To Do",
-    position: 65536,
-    category: "TODO",
-    color: null,
-    cards: [],
-    ...overrides,
-  };
-}
+import { makeCard, makeColumn } from "@/test/factories";
 
 beforeEach(() => {
   useBoardStore.setState({
