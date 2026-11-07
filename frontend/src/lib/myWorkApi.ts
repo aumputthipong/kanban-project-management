@@ -25,7 +25,7 @@ export function completeMyTask(cardId: string): Promise<void> {
 export function snoozeCardDueDate(cardId: string, dueDate: string): Promise<unknown> {
   return apiClient(`/cards/${cardId}`, {
     method: "PATCH",
-    data: { due_date: dueDate },
+    data: { due_date: dueDate, changed_fields: ["due_date"] },
   });
 }
 

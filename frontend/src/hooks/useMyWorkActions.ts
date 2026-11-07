@@ -3,28 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { completeMyTask, fetchMyWork, snoozeCardDueDate } from "@/lib/myWorkApi";
+import { isHandledByApiClient, toastFailure } from "@/lib/apiClient";
+import { shiftCounts, shortTitle } from "@/lib/myWorkCounts";
 import { useToastStore } from "@/store/useToastStore";
-import type {
-  MyWorkCard,
-  MyWorkCounts,
-  MyWorkGroup,
-  MyWorkResponse,
-} from "@/types/myWork";
+import type { MyWorkCard, MyWorkCounts, MyWorkGroup, MyWorkResponse } from "@/types/myWork";
 
 // Delayed commit: a DONE move has no clean server-side undo.
 const COMPLETE_UNDO_MS = 5000;
 
-const GROUP_TO_COUNT: Record<MyWorkGroup, keyof Omit<MyWorkCounts, "total">> = {
-  overdue: "overdue",
-  today: "today",
-  this_week: "this_week",
-  later: "later",
-  no_date: "no_date",
-};
-
-function shortTitle(title: string, max = 40): string {
-  const t = title.trim();
-  return t.length > max ? `${t.slice(0, max).trimEnd()}…` : t;
+interface PendingCompletion {
+  card: MyWorkCard;
+  timer: ReturnType<typeof setTimeout>;
+  committing: boolean;
 }
 
 interface UseMyWorkActionsArgs {
@@ -34,47 +24,56 @@ interface UseMyWorkActionsArgs {
   setError: Dispatch<SetStateAction<string | null>>;
 }
 
-export function useMyWorkActions({
-  data,
-  setData,
-  setCounts,
-  setError,
-}: UseMyWorkActionsArgs) {
+export function useMyWorkActions({ data, setData, setCounts, setError }: UseMyWorkActionsArgs) {
   const showToast = useToastStore((s) => s.show);
 
   // Session-local: the API has no "done today".
   const [doneToday, setDoneToday] = useState(0);
-  const pendingCompletions = useRef<
-    Map<string, { card: MyWorkCard; timer: ReturnType<typeof setTimeout> }>
-  >(new Map());
+  // Kept until the commit settles, so a refetch can't resurrect the card.
+  const pendingCompletions = useRef<Map<string, PendingCompletion>>(new Map());
 
-  // Hide mid-undo cards so a refetch can't resurrect them.
+  const reportFailure = useCallback(
+    (err: unknown, message: string) => {
+      if (!isHandledByApiClient(err)) setError(message);
+    },
+    [setError],
+  );
+
   const filterPending = useCallback((cards: MyWorkCard[]) => {
     const pending = pendingCompletions.current;
     return pending.size > 0 ? cards.filter((c) => !pending.has(c.id)) : cards;
   }, []);
 
-  // Not a refetch — it would resurrect other pending completions.
   const adjustCounts = useCallback(
     (group: MyWorkGroup, delta: number) => {
-      setCounts((c) =>
-        c
-          ? {
-              ...c,
-              [GROUP_TO_COUNT[group]]: Math.max(0, c[GROUP_TO_COUNT[group]] + delta),
-              total: Math.max(0, c.total + delta),
-            }
-          : c,
-      );
+      setCounts((c) => (c ? shiftCounts(c, group, delta) : c));
     },
     [setCounts],
   );
 
-  const restorePending = useCallback(
+  // The server still counts pending cards as open; take them out.
+  const applyRefresh = useCallback(
+    (res: MyWorkResponse) => {
+      const pending = pendingCompletions.current;
+      const hidden = res.cards.filter((c) => pending.has(c.id));
+      setData({ ...res, cards: filterPending(res.cards) });
+      setCounts(hidden.reduce((c, card) => shiftCounts(c, card.group, -1), res.counts));
+    },
+    [filterPending, setCounts, setData],
+  );
+
+  const refreshQuietly = useCallback(async () => {
+    try {
+      applyRefresh(await fetchMyWork({}));
+    } catch {
+      // The change is saved; the optimistic list stands until the next load.
+    }
+  }, [applyRefresh]);
+
+  const restoreCard = useCallback(
     (card: MyWorkCard) => {
       setData((prev) => (prev ? { ...prev, cards: [...prev.cards, card] } : prev));
       adjustCounts(card.group, +1);
-      if (card.group === "today") setDoneToday((n) => Math.max(0, n - 1));
     },
     [adjustCounts, setData],
   );
@@ -82,27 +81,32 @@ export function useMyWorkActions({
   const commitComplete = useCallback(
     async (cardId: string) => {
       const entry = pendingCompletions.current.get(cardId);
-      if (!entry) return;
-      pendingCompletions.current.delete(cardId);
+      if (!entry || entry.committing) return;
+      entry.committing = true;
       try {
         await completeMyTask(cardId);
+        setError(null);
       } catch (err) {
-        restorePending(entry.card);
-        setError(err instanceof Error ? err.message : "ทำเครื่องหมายเสร็จไม่สำเร็จ");
+        restoreCard(entry.card);
+        if (entry.card.group === "today") setDoneToday((n) => Math.max(0, n - 1));
+        reportFailure(err, "ทำเครื่องหมายเสร็จไม่สำเร็จ");
+      } finally {
+        pendingCompletions.current.delete(cardId);
       }
     },
-    [restorePending, setError],
+    [reportFailure, restoreCard, setError],
   );
 
   const undoComplete = useCallback(
     (cardId: string) => {
       const entry = pendingCompletions.current.get(cardId);
-      if (!entry) return;
+      if (!entry || entry.committing) return;
       clearTimeout(entry.timer);
       pendingCompletions.current.delete(cardId);
-      restorePending(entry.card);
+      restoreCard(entry.card);
+      if (entry.card.group === "today") setDoneToday((n) => Math.max(0, n - 1));
     },
-    [restorePending],
+    [restoreCard],
   );
 
   const handleComplete = useCallback(
@@ -116,7 +120,7 @@ export function useMyWorkActions({
       if (card.group === "today") setDoneToday((n) => n + 1);
 
       const timer = setTimeout(() => void commitComplete(cardId), COMPLETE_UNDO_MS);
-      pendingCompletions.current.set(cardId, { card, timer });
+      pendingCompletions.current.set(cardId, { card, timer, committing: false });
 
       showToast({
         message: `ทำ "${shortTitle(card.title)}" เสร็จแล้ว`,
@@ -128,12 +132,14 @@ export function useMyWorkActions({
     [data, adjustCounts, setData, showToast, commitComplete, undoComplete],
   );
 
+  // The page is gone, so only a toast can report a failure.
   useEffect(() => {
     const pending = pendingCompletions.current;
     return () => {
       for (const [cardId, entry] of pending) {
+        if (entry.committing) continue;
         clearTimeout(entry.timer);
-        void completeMyTask(cardId);
+        completeMyTask(cardId).catch((err) => toastFailure(err, "ทำเครื่องหมายเสร็จไม่สำเร็จ"));
       }
       pending.clear();
     };
@@ -144,39 +150,39 @@ export function useMyWorkActions({
     async (cardId: string, originalDueDate: string) => {
       try {
         await snoozeCardDueDate(cardId, originalDueDate);
-        const refreshed = await fetchMyWork({});
-        setData(refreshed);
-        setCounts(refreshed.counts);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "ย้อนกลับไม่สำเร็จ");
+        reportFailure(err, "ย้อนกลับไม่สำเร็จ");
+        return;
       }
+      setError(null);
+      await refreshQuietly();
     },
-    [setCounts, setData, setError],
+    [refreshQuietly, reportFailure, setError],
   );
 
   const handleSnooze = useCallback(
     async (cardId: string, dueDate: string, label: string) => {
-      if (!data) return;
-      const prev = data;
-      const original = prev.cards.find((c) => c.id === cardId)?.due_date ?? "";
-      setData({ ...prev, cards: prev.cards.filter((c) => c.id !== cardId) });
+      const card = data?.cards.find((c) => c.id === cardId);
+      if (!card) return;
+      setData((prev) => (prev ? { ...prev, cards: prev.cards.filter((c) => c.id !== cardId) } : prev));
+      adjustCounts(card.group, -1);
       try {
         await snoozeCardDueDate(cardId, dueDate);
-        const refreshed = await fetchMyWork({});
-        setData(refreshed);
-        setCounts(refreshed.counts);
-        showToast({
-          message: `เลื่อนไป${label}แล้ว`,
-          actionLabel: "ย้อนกลับ",
-          onAction: () => undoSnooze(cardId, original),
-          duration: 5000,
-        });
       } catch (err) {
-        setData(prev);
-        setError(err instanceof Error ? err.message : "เลื่อนวันไม่สำเร็จ");
+        restoreCard(card);
+        reportFailure(err, "เลื่อนวันไม่สำเร็จ");
+        return;
       }
+      setError(null);
+      showToast({
+        message: `เลื่อนไป${label}แล้ว`,
+        actionLabel: "ย้อนกลับ",
+        onAction: () => undoSnooze(cardId, card.due_date ?? ""),
+        duration: 5000,
+      });
+      await refreshQuietly();
     },
-    [data, setCounts, setData, setError, showToast, undoSnooze],
+    [data, adjustCounts, refreshQuietly, reportFailure, restoreCard, setData, setError, showToast, undoSnooze],
   );
 
   return { doneToday, filterPending, handleComplete, handleSnooze };
