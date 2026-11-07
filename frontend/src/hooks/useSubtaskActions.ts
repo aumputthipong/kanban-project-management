@@ -1,38 +1,32 @@
 import { useCallback } from "react";
 import { useBoardStore } from "@/store/useBoardStore";
 import { useToastStore } from "@/store/useToastStore";
-import { API_URL } from "@/lib/constants";
+import { apiClient, ApiError } from "@/lib/apiClient";
 import type { Subtask } from "@/types/board";
+
+// 403 is skipped — apiClient has already toasted it.
+function toastFailure(err: unknown, message: string) {
+  if (err instanceof ApiError && err.status === 403) return;
+  useToastStore.getState().show({ message, duration: 4000 });
+}
 
 export function useSubtaskActions() {
   // Stable identity — consumers put this in effect deps.
   const fetchSubtasks = useCallback(async (cardId: string) => {
     try {
-      const response = await fetch(`${API_URL}/cards/${cardId}/subtasks`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Failed to fetch subtasks");
-      const data: Subtask[] = await response.json();
+      const data = await apiClient<Subtask[]>(`/cards/${cardId}/subtasks`);
       useBoardStore.getState().setSubtasksToCard(cardId, data);
-    } catch (error) {
-      console.error("Error fetching subtasks:", error);
+    } catch (err) {
+      toastFailure(err, "โหลด subtask ไม่สำเร็จ");
     }
   }, []);
 
   const handleAddSubtask = async (cardId: string, title: string) => {
     try {
-      const response = await fetch(`${API_URL}/cards/${cardId}/subtasks`, {
+      const newSubtask = await apiClient<Subtask>(`/cards/${cardId}/subtasks`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ title }),
+        data: { title },
       });
-
-      if (!response.ok) throw new Error("Failed to create subtask");
-
-      const newSubtask: Subtask = await response.json();
 
       // Re-read after the await: the broadcast may already carry it.
       const { columns, setSubtasksToCard } = useBoardStore.getState();
@@ -41,8 +35,8 @@ export function useSubtaskActions() {
       if (card && !list.some((st) => st.id === newSubtask.id)) {
         setSubtasksToCard(cardId, [...list, newSubtask]);
       }
-    } catch (error) {
-      console.error("Error creating subtask:", error);
+    } catch (err) {
+      toastFailure(err, "เพิ่ม subtask ไม่สำเร็จ");
     }
   };
 
@@ -55,16 +49,13 @@ export function useSubtaskActions() {
     useBoardStore.getState().updateSubtaskInCard(cardId, subtaskId, { is_done: newStatus });
 
     try {
-      const response = await fetch(`${API_URL}/cards/${cardId}/subtasks/${subtaskId}`, {
+      await apiClient(`/cards/${cardId}/subtasks/${subtaskId}`, {
         method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_done: newStatus }),
+        data: { is_done: newStatus },
       });
-      if (!response.ok) throw new Error("Failed to update subtask");
-    } catch (error) {
-      console.error("Error updating subtask:", error);
+    } catch (err) {
       useBoardStore.getState().updateSubtaskInCard(cardId, subtaskId, { is_done: currentStatus });
+      toastFailure(err, "อัปเดต subtask ไม่สำเร็จ");
     }
   };
 
@@ -92,15 +83,11 @@ export function useSubtaskActions() {
     setTimeout(async () => {
       if (undone) return;
       try {
-        const response = await fetch(
-          `${API_URL}/cards/${cardId}/subtasks/${subtaskId}`,
-          { method: "DELETE", credentials: "include" },
-        );
-        if (!response.ok) throw new Error("Failed to delete subtask");
-      } catch (error) {
-        console.error("Error deleting subtask:", error);
+        await apiClient(`/cards/${cardId}/subtasks/${subtaskId}`, { method: "DELETE" });
+      } catch (err) {
         useToastStore.getState().dismiss(toastId);
         fetchSubtasks(cardId);
+        toastFailure(err, "ลบ subtask ไม่สำเร็จ");
       }
     }, 5000);
   };
@@ -114,16 +101,13 @@ export function useSubtaskActions() {
     useBoardStore.getState().updateSubtaskInCard(cardId, subtaskId, { title: newTitle.trim() });
 
     try {
-      const response = await fetch(`${API_URL}/cards/${cardId}/subtasks/${subtaskId}`, {
+      await apiClient(`/cards/${cardId}/subtasks/${subtaskId}`, {
         method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle.trim() }),
+        data: { title: newTitle.trim() },
       });
-      if (!response.ok) throw new Error("Failed to update subtask title");
-    } catch (error) {
-      console.error("Error updating subtask title:", error);
+    } catch (err) {
       fetchSubtasks(cardId);
+      toastFailure(err, "เปลี่ยนชื่อ subtask ไม่สำเร็จ");
     }
   };
 
