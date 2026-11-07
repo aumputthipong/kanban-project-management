@@ -14,6 +14,16 @@ function revertWith(snapshot: Column[], message: string) {
   };
 }
 
+// Only the patched keys, so a newer broadcast to other fields survives.
+function restoreFields(cardId: string, before: Card | undefined, patch: Partial<Card>) {
+  if (!before) return;
+  const { columns, updateCard } = useBoardStore.getState();
+  const latest = columns.flatMap((c) => c.cards).find((c) => c.id === cardId);
+  if (!latest) return;
+  const keys = Object.keys(patch) as (keyof Card)[];
+  updateCard({ ...latest, ...Object.fromEntries(keys.map((k) => [k, before[k]])) });
+}
+
 export function useCardActions() {
 
   const handleToggleDone = (card: Card) => {
@@ -124,6 +134,7 @@ export function useCardActions() {
 
     // apiClient, not raw fetch: raw fetch silently resolves on 4xx.
     apiClient(`/cards/${cardId}`, { method: "PATCH", data: body }).catch((err) => {
+      restoreFields(cardId, current, patch);
       if (err instanceof ApiError && err.status === 403) return; // apiClient already toasted
       useToastStore.getState().show({
         message: "บันทึกการ์ดไม่สำเร็จ — ลองอีกครั้ง",

@@ -1,4 +1,4 @@
-import type { BoardMember, Card, Column } from "@/types/board";
+import type { BoardMember, Card, Column, Subtask } from "@/types/board";
 
 export function makeCard(overrides: Partial<Card> = {}): Card {
   return {
@@ -43,4 +43,8 @@ export function makeMember(overrides: Partial<BoardMember> = {}): BoardMember {
     full_name: "User One",
     ...overrides,
   };
+}
+
+export function makeSubtask(overrides: Partial<Subtask> = {}): Subtask {
+  return { id: "st-1", card_id: "card-1", title: "Sub", is_done: false, position: 1, ...overrides };
 }
