@@ -202,3 +202,90 @@ describe("remove", () => {
     expect(toastMessages()).toEqual(["ไม่มีสิทธิ์"]);
   });
 });
+
+describe("ordering between reloads and writes", () => {
+  it("ignores a reload that was sent before a comment finished saving", async () => {
+    let releaseList!: () => void;
+    let listCalls = 0;
+    server.use(
+      http.get(apiUrl("/planning/items/i1/comments"), async () => {
+        if (++listCalls === 2) await new Promise<void>((r) => (releaseList = r));
+        return HttpResponse.json([makeComment()]);
+      }),
+      http.post(apiUrl("/planning/items/i1/comments"), () =>
+        HttpResponse.json(makeComment({ id: "c2", body: "Second" }), { status: 201 })
+      )
+    );
+    const { result } = renderHook(() => usePlanningComments("i1", "me"));
+    await act(() => result.current.load());
+    let reload!: Promise<void>;
+    act(() => {
+      reload = result.current.load();
+    });
+    await waitFor(() => expect(releaseList).toBeDefined());
+    await act(() => result.current.create("Second"));
+    releaseList();
+    await act(() => reload);
+    expect(bodies(result)).toEqual(["First", "Second"]);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("leaves a saved comment where the reload put it", async () => {
+    let release!: () => void;
+    server.use(
+      http.get(apiUrl("/planning/items/i1/comments"), () =>
+        HttpResponse.json([
+          makeComment(),
+          makeComment({ id: "c2", body: "Mine" }),
+          makeComment({ id: "c3", body: "Theirs" }),
+        ])
+      ),
+      http.post(apiUrl("/planning/items/i1/comments"), async () => {
+        await new Promise<void>((r) => (release = r));
+        return HttpResponse.json(makeComment({ id: "c2", body: "Mine" }), { status: 201 });
+      })
+    );
+    const { result } = renderHook(() => usePlanningComments("i1", "me"));
+    let sending!: Promise<void>;
+    act(() => {
+      sending = result.current.create("Mine");
+    });
+    await waitFor(() => expect(release).toBeDefined());
+    await act(() => result.current.load());
+    release();
+    await act(() => sending);
+    expect(bodies(result)).toEqual(["First", "Mine", "Theirs"]);
+  });
+
+  it("a failed second edit restores the first edit, not the original text", async () => {
+    let calls = 0;
+    server.use(
+      http.patch(apiUrl("/planning/comments/c1"), () =>
+        ++calls === 1
+          ? HttpResponse.json(makeComment({ body: "A" }))
+          : HttpResponse.json({ error: "boom" }, { status: 500 })
+      )
+    );
+    const { result } = await loaded();
+    await act(async () => {
+      const first = result.current.edit("c1", "A");
+      const second = result.current.edit("c1", "B");
+      await Promise.all([first, second]);
+    });
+    expect(bodies(result)).toEqual(["A"]);
+  });
+
+  it("keeps edit and remove stable across list changes", async () => {
+    server.use(
+      http.post(apiUrl("/planning/items/i1/comments"), () =>
+        HttpResponse.json(makeComment({ id: "c2", body: "Second" }), { status: 201 })
+      )
+    );
+    const { result } = await loaded();
+    const { edit, remove } = result.current;
+    await act(() => result.current.create("Second"));
+    expect(result.current.edit).toBe(edit);
+    expect(result.current.remove).toBe(remove);
+  });
+});
+

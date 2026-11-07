@@ -68,6 +68,13 @@ describe("loading", () => {
     expect(toastMessages()).toEqual(["โหลดบันทึกไม่ได้"]);
   });
 
+  it("still leaves the session on 403 but without a second toast", async () => {
+    server.use(http.get(apiUrl("/planning/sessions/s1"), fail(403, "ไม่มีสิทธิ์")));
+    renderHook(() => useSessionItems("b1", "s1"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/board/b1/planning"));
+    expect(toastMessages()).toEqual(["ไม่มีสิทธิ์"]);
+  });
+
   it("leaves a 401 to the login redirect", async () => {
     server.use(
       http.get(apiUrl("/planning/sessions/s1"), fail(401)),
@@ -194,7 +201,10 @@ describe("changeType", () => {
   });
 
   it("reverts with a Thai reason when the Note was already sent to the board", async () => {
-    server.use(http.patch(apiUrl("/planning/items/i1"), fail(409, "Item already promoted")));
+    // planning_handler.go answers a retype of a promoted item with 400.
+    server.use(
+      http.patch(apiUrl("/planning/items/i1"), fail(400, "ส่งเข้า Board แล้ว เปลี่ยนประเภทไม่ได้"))
+    );
     const { result } = await setup();
     act(() => result.current.changeType(item(result, "i1")!, "DEC"));
     await waitFor(() =>

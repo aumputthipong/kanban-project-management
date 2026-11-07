@@ -53,7 +53,7 @@ export function useSessionItems(
       })
       .catch((err: unknown) => {
         if (cancelled || (err instanceof ApiError && err.status === 401)) return;
-        showToast({ message: "โหลดบันทึกไม่ได้", duration: 4000 });
+        toastFailure(err, "โหลดบันทึกไม่ได้");
         router.push(`/board/${boardId}/planning`);
       });
     return () => {
@@ -156,7 +156,7 @@ export function useSessionItems(
           );
           toastFailure(
             err,
-            err instanceof ApiError && err.status === 409
+            err instanceof ApiError && err.status === 400
               ? "Note นี้ส่งเข้า Board แล้ว เปลี่ยนประเภทไม่ได้"
               : "เปลี่ยนประเภทไม่ได้",
           );

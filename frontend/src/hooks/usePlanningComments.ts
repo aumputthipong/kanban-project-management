@@ -11,25 +11,41 @@ interface State {
 }
 
 const tempId = () => `__pending_${Math.random().toString(36).slice(2)}`;
+const INITIAL: State = { comments: [], isLoading: false, loaded: false };
 
 export function usePlanningComments(itemId: string, currentUserId: string | null) {
-  const [state, setState] = useState<State>({ comments: [], isLoading: false, loaded: false });
-  // ref, not state — a render-triggering flag here would cascade.
-  const requestRef = useRef(0);
+  const [state, setState] = useState<State>(INITIAL);
+  // Mirrors state synchronously so callbacks stay stable and never read a stale render.
+  const stateRef = useRef<State>(INITIAL);
+  // Bumped by every load and every settled write; a load answering under an older value is stale.
+  const generation = useRef(0);
+
+  const update = useCallback((fn: (prev: State) => State) => {
+    stateRef.current = fn(stateRef.current);
+    setState(stateRef.current);
+  }, []);
+
+  const mapComment = useCallback(
+    (id: string, fn: (c: PlanningComment) => PlanningComment) =>
+      update((prev) => ({ ...prev, comments: prev.comments.map((c) => (c.id === id ? fn(c) : c)) })),
+    [update],
+  );
 
   const load = useCallback(async () => {
-    const reqId = ++requestRef.current;
-    setState((prev) => ({ ...prev, isLoading: true }));
+    const gen = ++generation.current;
+    update((prev) => ({ ...prev, isLoading: true }));
     try {
       const rows = await planningApi.listComments(itemId);
-      if (requestRef.current !== reqId) return;
-      setState({ comments: rows, isLoading: false, loaded: true });
+      if (generation.current !== gen) {
+        update((prev) => ({ ...prev, isLoading: false }));
+        return;
+      }
+      update(() => ({ comments: rows, isLoading: false, loaded: true }));
     } catch (err) {
-      if (requestRef.current !== reqId) return;
-      setState((prev) => ({ ...prev, isLoading: false }));
-      toastFailure(err, "โหลดความคิดเห็นไม่ได้ ลองอีกครั้ง");
+      update((prev) => ({ ...prev, isLoading: false }));
+      if (generation.current === gen) toastFailure(err, "โหลดความคิดเห็นไม่ได้ ลองอีกครั้ง");
     }
-  }, [itemId]);
+  }, [itemId, update]);
 
   // Refetch on tab focus instead of polling.
   useEffect(() => {
@@ -42,14 +58,6 @@ export function usePlanningComments(itemId: string, currentUserId: string | null
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [state.loaded, load]);
-
-  const restore = useCallback((previous: PlanningComment | undefined) => {
-    if (!previous) return;
-    setState((prev) => ({
-      ...prev,
-      comments: prev.comments.map((c) => (c.id === previous.id ? previous : c)),
-    }));
-  }, []);
 
   const create = useCallback(
     async (body: string) => {
@@ -67,70 +75,65 @@ export function usePlanningComments(itemId: string, currentUserId: string | null
         updated_at: now,
         deleted_at: null,
       };
-      setState((prev) => ({ ...prev, comments: [...prev.comments, placeholder] }));
+      update((prev) => ({ ...prev, comments: [...prev.comments, placeholder] }));
       try {
         const real = await planningApi.createComment(itemId, trimmed);
-        // A reload may have replaced the list (and the placeholder) meanwhile.
-        setState((prev) => {
-          const rest = prev.comments.filter((c) => c.id !== placeholderId && c.id !== real.id);
-          const at = prev.comments.findIndex((c) => c.id === placeholderId);
-          const comments = [...rest];
-          comments.splice(at < 0 ? rest.length : at, 0, real);
-          return { ...prev, comments };
+        generation.current++;
+        // A reload may already list it, or may have dropped the placeholder.
+        update((prev) => {
+          if (prev.comments.some((c) => c.id === real.id)) {
+            return { ...prev, comments: prev.comments.filter((c) => c.id !== placeholderId) };
+          }
+          const hasPlaceholder = prev.comments.some((c) => c.id === placeholderId);
+          return {
+            ...prev,
+            comments: hasPlaceholder
+              ? prev.comments.map((c) => (c.id === placeholderId ? real : c))
+              : [...prev.comments, real],
+          };
         });
       } catch (err) {
-        setState((prev) => ({
+        update((prev) => ({
           ...prev,
           comments: prev.comments.filter((c) => c.id !== placeholderId),
         }));
         toastFailure(err, "ส่งความคิดเห็นไม่สำเร็จ");
       }
     },
-    [itemId, currentUserId],
+    [itemId, currentUserId, update],
   );
 
   const edit = useCallback(
     async (commentId: string, body: string) => {
       const trimmed = body.trim();
       if (!trimmed) return;
-      const previous = state.comments.find((c) => c.id === commentId);
-      setState((prev) => ({
-        ...prev,
-        comments: prev.comments.map((c) =>
-          c.id === commentId ? { ...c, body: trimmed, updated_at: new Date().toISOString() } : c,
-        ),
-      }));
+      const previous = stateRef.current.comments.find((c) => c.id === commentId);
+      mapComment(commentId, (c) => ({ ...c, body: trimmed, updated_at: new Date().toISOString() }));
       try {
         const updated = await planningApi.editComment(commentId, trimmed);
-        setState((prev) => ({
-          ...prev,
-          comments: prev.comments.map((c) => (c.id === commentId ? updated : c)),
-        }));
+        generation.current++;
+        mapComment(commentId, () => updated);
       } catch (err) {
-        restore(previous);
+        if (previous) mapComment(commentId, () => previous);
         toastFailure(err, "แก้ไม่สำเร็จ");
       }
     },
-    [state.comments, restore],
+    [mapComment],
   );
 
   const remove = useCallback(
     async (commentId: string) => {
-      const previous = state.comments.find((c) => c.id === commentId);
-      setState((prev) => ({
-        ...prev,
-        comments: prev.comments.map((c) =>
-          c.id === commentId ? { ...c, body: null, deleted_at: new Date().toISOString() } : c,
-        ),
-      }));
+      const previous = stateRef.current.comments.find((c) => c.id === commentId);
+      mapComment(commentId, (c) => ({ ...c, body: null, deleted_at: new Date().toISOString() }));
       try {
         await planningApi.deleteComment(commentId);
+        generation.current++;
       } catch (err) {
-        restore(previous);
+        if (previous) mapComment(commentId, () => previous);
         toastFailure(err, "ลบไม่สำเร็จ");
       }
     },
-    [state.comments, restore],
+    [mapComment],
   );
 
   return {
