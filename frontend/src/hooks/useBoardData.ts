@@ -14,12 +14,14 @@ export function useBoardData(boardId: string) {
   const setBoardMembers = useBoardStore((s) => s.setBoardMembers);
   const setBoardMeta = useBoardStore((s) => s.setBoardMeta);
   const setLoading = useBoardStore((s) => s.setLoading);
+  const clearFilters = useBoardStore((s) => s.clearFilters);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!boardId) return;
     let cancelled = false;
+    clearFilters();
 
     const fetchAll = async () => {
       setIsLoading(true);
@@ -75,7 +77,7 @@ export function useBoardData(boardId: string) {
     return () => {
       cancelled = true;
     };
-  }, [boardId, setColumns, setCurrentUser, setBoardMembers, setBoardMeta, setLoading]);
+  }, [boardId, setColumns, setCurrentUser, setBoardMembers, setBoardMeta, setLoading, clearFilters]);
 
   return { isLoading, error };
 }
