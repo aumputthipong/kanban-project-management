@@ -31,13 +31,20 @@ export interface UseSessionItemsResult {
   promoteOne: (item: PlanningItem) => Promise<void>;
 }
 
-type PromoteOutcome =
-  | { kind: "sent" }
-  | { kind: "already" | "refused"; message: string }
-  | { kind: "failed" | "stop" };
+type PromoteOutcome = "sent" | keyof typeof PROMOTE_MESSAGES | "failed" | "stop";
 
-const THAI = /[\u0E00-\u0E7F]/;
-const thaiOr = (message: string, fallback: string) => (THAI.test(message) ? message : fallback);
+// Our wording for the promote endpoint's error codes (planning_handler.go).
+const PROMOTE_MESSAGES = {
+  already: "Note นี้ส่งเข้า Board ไปแล้ว",
+  dropped: "Note นี้ถูกพักไว้ เอากลับมาก่อนแล้วค่อยส่งเข้า Board",
+  noTodoColumn: "บอร์ดยังไม่มีคอลัมน์ TODO เพิ่มคอลัมน์ก่อนแล้วค่อยส่งเข้า Board",
+} as const;
+
+function batchSummary(sent: number, skipped: number): string | null {
+  const skippedNote = `ข้าม ${skipped} รายการที่พักไว้`;
+  if (sent > 0) return `ส่งเข้า Board แล้ว ${sent} รายการ${skipped > 0 ? ` · ${skippedNote}` : ""}`;
+  return skipped > 0 ? `${skippedNote} เอากลับมาก่อนแล้วค่อยส่ง` : null;
+}
 
 export function useSessionItems(
   boardId: string,
@@ -186,37 +193,40 @@ export function useSessionItems(
     [],
   );
 
-  // 409 = already on the board; 422 = the server's actionable reason (planning_handler.go).
+  const markStatus = useCallback((id: string, status: PlanningItemStatus) => {
+    setItems((prev) => prev.map((cur) => (cur.id === id ? { ...cur, status } : cur)));
+  }, []);
+
   const promoteOnce = useCallback(
     async (item: PlanningItem): Promise<PromoteOutcome> => {
       try {
         const res = await planningApi.promoteItem(item.id);
         setItems((prev) => prev.map((cur) => (cur.id === item.id ? res.item : cur)));
-        return { kind: "sent" };
+        return "sent";
       } catch (err) {
-        const fallback = `ส่งเข้า Board ไม่ได้: ${item.title}`;
-        if (err instanceof ApiError && err.status === 409) {
-          setItems((prev) =>
-            prev.map((cur) => (cur.id === item.id ? { ...cur, status: "promoted" } : cur)),
-          );
-          return { kind: "already", message: thaiOr(err.message, "Note นี้ส่งเข้า Board ไปแล้ว") };
+        const code = err instanceof ApiError ? err.code : undefined;
+        if (code === "already_promoted") {
+          markStatus(item.id, "promoted");
+          return "already";
         }
-        if (err instanceof ApiError && err.status === 422) {
-          return { kind: "refused", message: thaiOr(err.message, fallback) };
+        if (code === "item_dropped") {
+          markStatus(item.id, "dropped");
+          return "dropped";
         }
-        toastFailure(err, fallback);
-        return { kind: isHandledByApiClient(err) ? "stop" : "failed" };
+        if (code === "no_todo_column") return "noTodoColumn";
+        toastFailure(err, `ส่งเข้า Board ไม่ได้: ${item.title}`);
+        return isHandledByApiClient(err) ? "stop" : "failed";
       }
     },
-    [],
+    [markStatus],
   );
 
   const promoteOne = useCallback(
     async (item: PlanningItem) => {
       const outcome = await promoteOnce(item);
-      if (outcome.kind === "sent") showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
-      if (outcome.kind === "already" || outcome.kind === "refused") {
-        showToast({ message: outcome.message, duration: 5000 });
+      if (outcome === "sent") showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
+      else if (outcome in PROMOTE_MESSAGES) {
+        showToast({ message: PROMOTE_MESSAGES[outcome as keyof typeof PROMOTE_MESSAGES], duration: 5000 });
       }
     },
     [promoteOnce, showToast],
@@ -227,31 +237,25 @@ export function useSessionItems(
       const idSet = new Set(ids);
       const chosen = items.filter((it) => idSet.has(it.id) && it.status !== "promoted");
       const targets = chosen.filter((it) => it.status !== "dropped");
-      const skipped = chosen.length - targets.length;
-      if (targets.length === 0) {
-        if (skipped > 0) {
-          showToast({ message: "Note ที่เลือกถูกพักไว้ทั้งหมด เอากลับมาก่อนแล้วค่อยส่ง", duration: 4000 });
-        }
+      if (chosen.length > 0 && targets.length === 0) {
+        showToast({ message: "Note ที่เลือกถูกพักไว้ทั้งหมด เอากลับมาก่อนแล้วค่อยส่ง", duration: 4000 });
         return;
       }
       // Sequential to keep board card positions stable.
       let onBoard = 0;
-      let lastRefusal: string | null = null;
+      let skipped = chosen.length - targets.length;
       for (const it of targets) {
         const outcome = await promoteOnce(it);
-        if (outcome.kind === "sent" || outcome.kind === "already") onBoard++;
-        if (outcome.kind === "stop") break;
-        if (outcome.kind === "refused") {
-          // The same reason twice in a row is board-wide (no TODO column), not per Note.
-          if (outcome.message === lastRefusal) break;
-          showToast({ message: outcome.message, duration: 5000 });
-          lastRefusal = outcome.message;
+        if (outcome === "sent" || outcome === "already") onBoard++;
+        if (outcome === "dropped") skipped++;
+        if (outcome === "noTodoColumn") {
+          showToast({ message: PROMOTE_MESSAGES.noTodoColumn, duration: 5000 });
+          break;
         }
+        if (outcome === "stop") break;
       }
-      if (onBoard > 0) {
-        const skippedNote = skipped > 0 ? ` · ข้าม ${skipped} รายการที่พักไว้` : "";
-        showToast({ message: `ส่งเข้า Board แล้ว ${onBoard} รายการ${skippedNote}`, duration: 3000 });
-      }
+      const summary = batchSummary(onBoard, skipped);
+      if (summary) showToast({ message: summary, duration: 3000 });
     },
     [items, promoteOnce, showToast],
   );

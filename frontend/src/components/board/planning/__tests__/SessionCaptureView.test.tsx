@@ -152,7 +152,7 @@ describe("sending to the board", () => {
     const msg = "บอร์ดยังไม่มีคอลัมน์ TODO เพิ่มคอลัมน์ก่อนแล้วค่อยส่งเข้า Board";
     server.use(
       http.post(apiUrl("/planning/items/:id/promote"), () =>
-        HttpResponse.json({ error: msg }, { status: 422 })
+        HttpResponse.json({ error: msg, code: "no_todo_column" }, { status: 422 })
       )
     );
     const { user } = await open([

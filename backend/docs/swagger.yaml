@@ -397,6 +397,8 @@ definitions:
     type: object
   github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse:
     properties:
+      code:
+        type: string
       error:
         type: string
     type: object

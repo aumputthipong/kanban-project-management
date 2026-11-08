@@ -1787,6 +1787,9 @@ const docTemplate = `{
         "github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "string"
+                },
                 "error": {
                     "type": "string"
                 }

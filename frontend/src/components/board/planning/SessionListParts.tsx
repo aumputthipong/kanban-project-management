@@ -66,10 +66,26 @@ export function ListSkeleton() {
   );
 }
 
-export function LoadFailedState() {
+const LOAD_FAILED_MESSAGES = {
+  signedOut: "เซสชันหมดอายุ เข้าสู่ระบบใหม่อีกครั้ง",
+  forbidden: "คุณไม่มีสิทธิ์ดูบันทึกของบอร์ดนี้",
+  notFound: "ไม่พบบอร์ดนี้ หรือคุณไม่ได้เป็นสมาชิกแล้ว",
+  failed: "โหลดรายการบันทึกไม่ได้ ลองรีเฟรชหน้า",
+} as const;
+
+export type LoadFailure = keyof typeof LOAD_FAILED_MESSAGES;
+
+export function loadFailureOf(status: number | undefined): LoadFailure {
+  if (status === 401) return "signedOut";
+  if (status === 403) return "forbidden";
+  if (status === 404) return "notFound";
+  return "failed";
+}
+
+export function LoadFailedState({ reason }: { reason: LoadFailure }) {
   return (
-    <p className="rounded border border-dashed border-slate-300 bg-slate-50/40 p-6 text-center text-sm text-slate-400">
-      โหลดรายการบันทึกไม่ได้ ลองรีเฟรชหน้า
+    <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-6 text-center text-sm text-slate-500">
+      {LOAD_FAILED_MESSAGES[reason]}
     </p>
   );
 }

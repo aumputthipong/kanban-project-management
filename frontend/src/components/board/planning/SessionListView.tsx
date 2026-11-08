@@ -7,7 +7,14 @@ import { planningApi } from "@/lib/planningApi";
 import { ApiError, toastFailure } from "@/lib/apiClient";
 import type { PlanningSessionSummary } from "@/types/planning";
 import { SessionRow } from "./SessionRow";
-import { EmptyState, ListSkeleton, LoadFailedState, StatPill } from "./SessionListParts";
+import {
+  EmptyState,
+  ListSkeleton,
+  LoadFailedState,
+  StatPill,
+  loadFailureOf,
+  type LoadFailure,
+} from "./SessionListParts";
 
 interface Props {
   boardId: string;
@@ -17,7 +24,7 @@ export function SessionListView({ boardId }: Props) {
   const router = useRouter();
   const [sessions, setSessions] = useState<PlanningSessionSummary[] | null>(null);
   const [creating, setCreating] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadFailure, setLoadFailure] = useState<LoadFailure | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,13 +32,12 @@ export function SessionListView({ boardId }: Props) {
       .listSessions(boardId)
       .then((rows) => {
         if (cancelled) return;
-        setLoadFailed(false);
+        setLoadFailure(null);
         setSessions(rows);
       })
       .catch((err: unknown) => {
-        // 401 is already redirecting to login.
-        if (cancelled || (err instanceof ApiError && err.status === 401)) return;
-        setLoadFailed(true);
+        if (cancelled) return;
+        setLoadFailure(loadFailureOf(err instanceof ApiError ? err.status : undefined));
         setSessions([]);
       });
     return () => {
@@ -103,8 +109,8 @@ export function SessionListView({ boardId }: Props) {
         </button>
       </div>
 
-      {loadFailed ? (
-        <LoadFailedState />
+      {loadFailure ? (
+        <LoadFailedState reason={loadFailure} />
       ) : sessions.length === 0 ? (
         <EmptyState onCreate={createSession} creating={creating} />
       ) : (

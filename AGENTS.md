@@ -142,6 +142,7 @@ Constants live in [`backend/internal/service/activity_service.go`](backend/inter
   - `ErrPlanningItemDropped` / `ErrPlanningNoTodoColumn` → 422 (user-actionable)
   - `pgx.ErrNoRows` → 404
   - default → 500
+- **Error code:** ถ้า frontend ต้องแยกประเภท error ให้ใส่ `.WithCode("snake_case")` ที่ `NewAPIError` → JSON `{error, code}` แล้ว frontend อ่าน `ApiError.code` **ห้าม** เทียบข้อความ `error` (ข้อความแก้ได้, code คือ contract). ตัวอย่าง: promote ส่ง `already_promoted` / `item_dropped` / `no_todo_column`
 
 ---
 

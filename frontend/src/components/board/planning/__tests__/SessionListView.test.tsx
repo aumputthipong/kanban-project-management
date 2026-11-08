@@ -101,14 +101,23 @@ describe("SessionListView", () => {
     await waitFor(() => expect(toastMessages()).toEqual(["ไม่มีสิทธิ์"]));
   });
 
-  it("does not show the load-failed line while a 401 redirects to login", async () => {
+  it.each([
+    [403, "คุณไม่มีสิทธิ์ดูบันทึกของบอร์ดนี้"],
+    [404, "ไม่พบบอร์ดนี้ หรือคุณไม่ได้เป็นสมาชิกแล้ว"],
+  ])("says why on %i instead of asking for a refresh", async (status, message) => {
+    list(() => HttpResponse.json({ error: "no" }, { status }));
+    renderWithUser(<SessionListView boardId="b1" />);
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.queryByText("โหลดรายการบันทึกไม่ได้ ลองรีเฟรชหน้า")).not.toBeInTheDocument();
+  });
+
+  it("asks to sign in again on a 401 instead of loading forever", async () => {
     list(() => HttpResponse.json({ error: "expired" }, { status: 401 }));
     server.use(
       http.post(apiUrl("/auth/refresh"), () => HttpResponse.json({}, { status: 401 }))
     );
     renderWithUser(<SessionListView boardId="b1" />);
-    await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByText("โหลดรายการบันทึกไม่ได้ ลองรีเฟรชหน้า")).not.toBeInTheDocument();
+    expect(await screen.findByText("เซสชันหมดอายุ เข้าสู่ระบบใหม่อีกครั้ง")).toBeInTheDocument();
   });
 });
 

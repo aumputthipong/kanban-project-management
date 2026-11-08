@@ -19,6 +19,7 @@ func RespondJSON(w http.ResponseWriter, status int, payload interface{}) {
 
 type ErrorResponse struct {
 	Error string `json:"error"`
+	Code  string `json:"code,omitempty"`
 }
 
 func RespondError(w http.ResponseWriter, status int, message string) {

@@ -91,6 +91,7 @@ func TestPromoteItem_AlreadyPromoted_Returns409(t *testing.T) {
 
 	assert.Equal(t, http.StatusConflict, w.Code)
 	assert.Contains(t, w.Body.String(), "ส่งเข้า Board ไปแล้ว")
+	assert.Contains(t, w.Body.String(), `"code":"already_promoted"`)
 	assert.Empty(t, act.Calls)
 }
 
@@ -106,6 +107,7 @@ func TestPromoteItem_DroppedItem_Returns422(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 	assert.Contains(t, w.Body.String(), "ถูกพักไว้")
+	assert.Contains(t, w.Body.String(), `"code":"item_dropped"`)
 	assert.Empty(t, act.Calls)
 }
 
@@ -121,6 +123,7 @@ func TestPromoteItem_NoTodoColumn_Returns422(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 	assert.Contains(t, w.Body.String(), "ยังไม่มีคอลัมน์ TODO")
+	assert.Contains(t, w.Body.String(), `"code":"no_todo_column"`)
 	assert.Empty(t, act.Calls)
 }
 
