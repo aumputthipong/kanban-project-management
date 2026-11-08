@@ -31,7 +31,10 @@ export function BoardSettingsForm({ boardId, board }: BoardSettingsFormProps) {
     try {
       await updateField(field, value);
     } catch (err) {
-      if (isMeta && before) patchBoardMeta({ [field]: before[field as keyof typeof before] });
+      const key = field as keyof NonNullable<typeof before>;
+      // Only undo our own write; a newer save of the same field keeps its value.
+      const stillOurs = useBoardStore.getState().boardMeta?.[key] === value;
+      if (isMeta && before && stillOurs) patchBoardMeta({ [key]: before[key] });
       throw err;
     }
   };

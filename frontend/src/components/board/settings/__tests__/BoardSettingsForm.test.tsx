@@ -79,6 +79,23 @@ describe("renaming", () => {
   });
 });
 
+it("keeps a newer header title when an older save fails afterwards", async () => {
+  let release: () => void = () => {};
+  server.use(
+    http.patch(BOARD, async () => {
+      await new Promise<void>((r) => (release = r));
+      return HttpResponse.json({ error: "x" }, { status: 500 });
+    })
+  );
+  const { user } = open();
+  await rename(user, "Beta");
+  // A later save (e.g. another settings tab) already put "Gamma" in the header.
+  useBoardStore.getState().patchBoardMeta({ title: "Gamma" });
+  release();
+  expect(await screen.findByText("บันทึกไม่สำเร็จ ลองอีกครั้ง")).toBeInTheDocument();
+  expect(useBoardStore.getState().boardMeta?.title).toBe("Gamma");
+});
+
 describe("description and appearance", () => {
   it("explains a failed description save instead of failing silently", async () => {
     failPatch(500);

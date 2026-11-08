@@ -4,6 +4,8 @@ import { useToastStore } from "@/store/useToastStore";
 /** `data` is JSON-stringified into the body and defaults the method to POST. */
 interface FetchOptions extends Omit<RequestInit, "body"> {
   data?: unknown;
+  /** Best-effort calls: still refresh the session, but never bounce the page to /login. */
+  noLoginRedirect?: boolean;
 }
 
 export class ApiError extends Error {
@@ -56,7 +58,7 @@ function redirectToLogin() {
 // Skips refresh for the refresh endpoint itself, or a dead session recurses.
 export async function apiClient<T = unknown>(
   endpoint: string,
-  { data, ...customConfig }: FetchOptions = {}
+  { data, noLoginRedirect, ...customConfig }: FetchOptions = {}
 ): Promise<T> {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -81,7 +83,7 @@ export async function apiClient<T = unknown>(
     const refreshed = await tryRefresh();
     if (refreshed) {
       response = await fetch(url, config);
-    } else {
+    } else if (!noLoginRedirect) {
       redirectToLogin();
     }
   }

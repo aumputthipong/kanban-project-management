@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import {
   apiClient,
@@ -196,4 +196,42 @@ describe("toastFailure", () => {
       expect(useToastStore.getState().toasts.map((t) => t.message)).toEqual(["ไม่สำเร็จ"]);
     }
   );
+});
+
+describe("apiClient login redirect", () => {
+  const realLocation = window.location;
+  let assign: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    assign = vi.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        href: `${realLocation.origin}/board/b1/tasks`,
+        origin: realLocation.origin,
+        protocol: realLocation.protocol,
+        host: realLocation.host,
+        pathname: "/board/b1/tasks",
+        search: "",
+        assign,
+      },
+    });
+    server.use(
+      http.get(apiUrl("/me"), () => HttpResponse.json({ error: "expired" }, { status: 401 })),
+      http.post(apiUrl("/auth/refresh"), () => HttpResponse.json({}, { status: 401 }))
+    );
+  });
+  afterEach(() => {
+    Object.defineProperty(window, "location", { configurable: true, value: realLocation });
+  });
+
+  it("sends the page to login, keeping where it was, when the session is dead", async () => {
+    await expect(apiClient("/me")).rejects.toMatchObject({ status: 401 });
+    expect(assign).toHaveBeenCalledWith("/login?redirect=%2Fboard%2Fb1%2Ftasks");
+  });
+
+  it("stays put for a best-effort call marked noLoginRedirect", async () => {
+    await expect(apiClient("/me", { noLoginRedirect: true })).rejects.toMatchObject({ status: 401 });
+    expect(assign).not.toHaveBeenCalled();
+  });
 });

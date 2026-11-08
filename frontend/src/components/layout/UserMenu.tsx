@@ -26,7 +26,8 @@ export function UserMenu({ fallbackEmail }: UserMenuProps) {
 
   useEffect(() => {
     let cancelled = false;
-    apiClient<UserMe>("/auth/me")
+    // Rendered on public pages too; a revoked session must not bounce the visitor.
+    apiClient<UserMe>("/auth/me", { noLoginRedirect: true })
       .then((data) => {
         if (cancelled || !data) return;
         setMe(data);
