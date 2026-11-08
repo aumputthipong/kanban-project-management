@@ -100,4 +100,15 @@ describe("SessionListView", () => {
     await user.click(screen.getAllByRole("button", { name: /New Note/ })[0]);
     await waitFor(() => expect(toastMessages()).toEqual(["ไม่มีสิทธิ์"]));
   });
+
+  it("does not show the load-failed line while a 401 redirects to login", async () => {
+    list(() => HttpResponse.json({ error: "expired" }, { status: 401 }));
+    server.use(
+      http.post(apiUrl("/auth/refresh"), () => HttpResponse.json({}, { status: 401 }))
+    );
+    renderWithUser(<SessionListView boardId="b1" />);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText("โหลดรายการบันทึกไม่ได้ ลองรีเฟรชหน้า")).not.toBeInTheDocument();
+  });
 });
+

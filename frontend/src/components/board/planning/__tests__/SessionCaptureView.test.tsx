@@ -158,10 +158,12 @@ describe("sending to the board", () => {
     const { user } = await open([
       makeItem({ id: "a", title: "First" }),
       makeItem({ id: "b", title: "Second" }),
+      makeItem({ id: "c", title: "Third" }),
     ]);
     await user.click(screen.getByRole("button", { name: /Select to send/ }));
     await user.click(screen.getByText("First"));
     await user.click(screen.getByText("Second"));
+    await user.click(screen.getByText("Third"));
     await user.click(screen.getByRole("button", { name: /Send to Board/ }));
     expect(await screen.findAllByText(msg)).toHaveLength(1);
   });

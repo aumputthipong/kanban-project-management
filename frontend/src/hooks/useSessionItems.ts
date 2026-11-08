@@ -31,6 +31,14 @@ export interface UseSessionItemsResult {
   promoteOne: (item: PlanningItem) => Promise<void>;
 }
 
+type PromoteOutcome =
+  | { kind: "sent" }
+  | { kind: "already" | "refused"; message: string }
+  | { kind: "failed" | "stop" };
+
+const THAI = /[\u0E00-\u0E7F]/;
+const thaiOr = (message: string, fallback: string) => (THAI.test(message) ? message : fallback);
+
 export function useSessionItems(
   boardId: string,
   sessionId: string,
@@ -180,34 +188,36 @@ export function useSessionItems(
 
   // 409 = already on the board; 422 = the server's actionable reason (planning_handler.go).
   const promoteOnce = useCallback(
-    async (item: PlanningItem): Promise<"sent" | "already" | "stop" | "failed"> => {
+    async (item: PlanningItem): Promise<PromoteOutcome> => {
       try {
         const res = await planningApi.promoteItem(item.id);
         setItems((prev) => prev.map((cur) => (cur.id === item.id ? res.item : cur)));
-        return "sent";
+        return { kind: "sent" };
       } catch (err) {
+        const fallback = `ส่งเข้า Board ไม่ได้: ${item.title}`;
         if (err instanceof ApiError && err.status === 409) {
           setItems((prev) =>
             prev.map((cur) => (cur.id === item.id ? { ...cur, status: "promoted" } : cur)),
           );
-          return "already";
+          return { kind: "already", message: thaiOr(err.message, "Note นี้ส่งเข้า Board ไปแล้ว") };
         }
         if (err instanceof ApiError && err.status === 422) {
-          showToast({ message: err.message, duration: 5000 });
-          return "stop";
+          return { kind: "refused", message: thaiOr(err.message, fallback) };
         }
-        toastFailure(err, `ส่งเข้า Board ไม่ได้: ${item.title}`);
-        return isHandledByApiClient(err) ? "stop" : "failed";
+        toastFailure(err, fallback);
+        return { kind: isHandledByApiClient(err) ? "stop" : "failed" };
       }
     },
-    [showToast],
+    [],
   );
 
   const promoteOne = useCallback(
     async (item: PlanningItem) => {
       const outcome = await promoteOnce(item);
-      if (outcome === "sent") showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
-      if (outcome === "already") showToast({ message: "Note นี้ส่งเข้า Board ไปแล้ว", duration: 2500 });
+      if (outcome.kind === "sent") showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
+      if (outcome.kind === "already" || outcome.kind === "refused") {
+        showToast({ message: outcome.message, duration: 5000 });
+      }
     },
     [promoteOnce, showToast],
   );
@@ -215,19 +225,32 @@ export function useSessionItems(
   const promoteMany = useCallback(
     async (ids: string[]) => {
       const idSet = new Set(ids);
-      const targets = items.filter(
-        (it) => idSet.has(it.id) && it.status !== "promoted" && it.status !== "dropped",
-      );
-      if (targets.length === 0) return;
+      const chosen = items.filter((it) => idSet.has(it.id) && it.status !== "promoted");
+      const targets = chosen.filter((it) => it.status !== "dropped");
+      const skipped = chosen.length - targets.length;
+      if (targets.length === 0) {
+        if (skipped > 0) {
+          showToast({ message: "Note ที่เลือกถูกพักไว้ทั้งหมด เอากลับมาก่อนแล้วค่อยส่ง", duration: 4000 });
+        }
+        return;
+      }
       // Sequential to keep board card positions stable.
       let onBoard = 0;
+      let lastRefusal: string | null = null;
       for (const it of targets) {
         const outcome = await promoteOnce(it);
-        if (outcome === "sent" || outcome === "already") onBoard++;
-        if (outcome === "stop") break;
+        if (outcome.kind === "sent" || outcome.kind === "already") onBoard++;
+        if (outcome.kind === "stop") break;
+        if (outcome.kind === "refused") {
+          // The same reason twice in a row is board-wide (no TODO column), not per Note.
+          if (outcome.message === lastRefusal) break;
+          showToast({ message: outcome.message, duration: 5000 });
+          lastRefusal = outcome.message;
+        }
       }
       if (onBoard > 0) {
-        showToast({ message: `ส่งเข้า Board แล้ว ${onBoard} รายการ`, duration: 3000 });
+        const skippedNote = skipped > 0 ? ` · ข้าม ${skipped} รายการที่พักไว้` : "";
+        showToast({ message: `ส่งเข้า Board แล้ว ${onBoard} รายการ${skippedNote}`, duration: 3000 });
       }
     },
     [items, promoteOnce, showToast],
