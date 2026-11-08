@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Loader2, LogOut } from "lucide-react";
-import { API_URL } from "@/lib/constants";
+import { ApiError, apiClient, toastFailure } from "@/lib/apiClient";
 import { getAvatarColor } from "@/utils/avatar";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
@@ -26,8 +26,7 @@ export function UserMenu({ fallbackEmail }: UserMenuProps) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/auth/me`, { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
+    apiClient<UserMe>("/auth/me")
       .then((data) => {
         if (cancelled || !data) return;
         setMe(data);
@@ -63,15 +62,17 @@ export function UserMenu({ fallbackEmail }: UserMenuProps) {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      router.push("/login");
-      router.refresh();
-    } catch {
-      setLoggingOut(false);
+      await apiClient("/auth/logout", { method: "POST" });
+    } catch (err) {
+      // 401: the session is already gone, which is what logout wanted.
+      if (!(err instanceof ApiError && err.status === 401)) {
+        toastFailure(err, "ออกจากระบบไม่สำเร็จ ลองอีกครั้ง");
+        setLoggingOut(false);
+        return;
+      }
     }
+    router.push("/login");
+    router.refresh();
   };
 
   return (

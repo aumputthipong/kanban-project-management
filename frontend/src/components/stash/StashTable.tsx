@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Trash2, RotateCcw, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { API_URL } from "@/lib/constants";
+import { ApiError, apiClient, toastFailure } from "@/lib/apiClient";
 import { boardColor, BoardGlyph } from "@/lib/boardAppearance";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { TypeToConfirmDialog } from "@/components/ui/TypeToConfirmDialog";
@@ -20,20 +20,22 @@ export function StashTable({ boards: initialBoards }: StashTableProps) {
   const [restoreTarget, setRestoreTarget] = useState<StashedBoard | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StashedBoard | null>(null);
 
+  // 404: someone already restored or deleted it in another tab — just drop the row.
+  const isGone = (err: unknown) => err instanceof ApiError && err.status === 404;
+  const dropRow = (id: string) => setBoards((prev) => prev.filter((b) => b.id !== id));
+
   const handleRestore = async (board: StashedBoard) => {
     setLoadingId(board.id);
     try {
-      const res = await fetch(`${API_URL}/stash/${board.id}/restore`, {
-        method: "PATCH",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to restore");
-
-      setBoards((prev) => prev.filter((b) => b.id !== board.id));
+      await apiClient(`/stash/${board.id}/restore`, { method: "PATCH" });
+      dropRow(board.id);
       setRestoreTarget(null);
       router.refresh();
     } catch (err) {
-      console.error(err);
+      if (isGone(err)) {
+        dropRow(board.id);
+        setRestoreTarget(null);
+      } else toastFailure(err, "กู้คืน Project ไม่สำเร็จ");
     } finally {
       setLoadingId(null);
     }
@@ -42,16 +44,14 @@ export function StashTable({ boards: initialBoards }: StashTableProps) {
   const handleDelete = async (board: StashedBoard) => {
     setLoadingId(board.id);
     try {
-      const res = await fetch(`${API_URL}/stash/${board.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to delete");
-
-      setBoards((prev) => prev.filter((b) => b.id !== board.id));
+      await apiClient(`/stash/${board.id}`, { method: "DELETE" });
+      dropRow(board.id);
       setDeleteTarget(null);
     } catch (err) {
-      console.error(err);
+      if (isGone(err)) {
+        dropRow(board.id);
+        setDeleteTarget(null);
+      } else toastFailure(err, "ลบ Project ไม่สำเร็จ");
     } finally {
       setLoadingId(null);
     }

@@ -178,7 +178,25 @@ func TestCreateBoardTag_NameTooLong_Returns422(t *testing.T) {
 	assert.Equal(t, "tag name too long (max 50 chars)", errorMessage(t, w))
 }
 
-// Only the two sentinels are echoed — never driver text.
+func TestCreateBoardTag_DuplicateName_Returns409WithCode(t *testing.T) {
+	svc := &mock.MockTagService{
+		CreateTagFn: func(ctx context.Context, boardID, name, color string) (db.Tag, error) {
+			return db.Tag{}, service.ErrTagNameTaken
+		},
+	}
+	h := NewTagHandler(svc, nil)
+
+	req := newTagRequest(http.MethodPost, "/boards/"+validBoardID+"/tags",
+		`{"name":"release","color":"rose"}`)
+	w := httptest.NewRecorder()
+
+	httputil.MakeHandler(h.CreateBoardTag)(w, req)
+
+	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.Contains(t, w.Body.String(), `"code":"tag_name_taken"`)
+}
+
+// Only the sentinels are echoed — never driver text.
 func TestCreateBoardTag_ServiceError_Returns500WithoutLeakingDBText(t *testing.T) {
 	svc := &mock.MockTagService{
 		CreateTagFn: func(ctx context.Context, boardID, name, color string) (db.Tag, error) {

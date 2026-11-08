@@ -41,9 +41,9 @@ function CardModalAsMe() {
   return card ? <ModalFor card={card} /> : null;
 }
 
-// The modal loads subtasks, members, tags and source on mount; let them land in-test.
+// The modal loads subtasks, tags and source on mount (members come from the store).
 let answered = 0;
-const settled = () => waitFor(() => expect(answered).toBe(4));
+const settled = () => waitFor(() => expect(answered).toBe(3));
 const answer = (body: JsonBodyType) => () => {
   answered++;
   return HttpResponse.json(body);
@@ -53,7 +53,6 @@ beforeEach(() => {
   answered = 0;
   server.use(
     http.get(apiUrl("/cards/c1/subtasks"), answer([])),
-    http.get(apiUrl("/boards/b1/members"), answer([])),
     http.get(apiUrl("/boards/b1/tags"), answer([])),
     http.get(apiUrl("/cards/c1/source"), answer(null))
   );

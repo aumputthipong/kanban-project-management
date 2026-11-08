@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { Card, BoardMember, Tag } from "@/types/board";
-import { API_URL } from "@/lib/constants";
+import { useState, useCallback, useRef } from "react";
+import type { Card, Tag } from "@/types/board";
+import { useBoardStore } from "@/store/useBoardStore";
 import type { CardSaveHandler, FormState } from "../components/board/card-modal/CardDetailModal";
 
 function buildInitialForm(card: Card): FormState {
@@ -29,8 +29,6 @@ function fieldEqual(field: keyof FormState, a: FormState, b: FormState): boolean
 /** Remount with `key={card.id}` to switch cards. Commits send one field — docs/adr/0009. */
 export function useCardForm(
   card: Card,
-  boardId: string,
-  isOpen: boolean,
   onCommit?: (form: FormState, field: keyof FormState) => ReturnType<CardSaveHandler>,
 ) {
   const [form, setForm] = useState<FormState>(() => buildInitialForm(card));
@@ -39,7 +37,8 @@ export function useCardForm(
   const formRef = useRef(form);
   const committedRef = useRef(form);
 
-  const [members, setMembers] = useState<BoardMember[]>([]);
+  // The board store's list is kept live over WS, so a removed member leaves the picker at once.
+  const members = useBoardStore((s) => s.boardMembers);
   const [error, setError] = useState<string | null>(null);
 
   const updateForm = useCallback(<K extends keyof FormState>(field: K, value: FormState[K]) => {
@@ -75,21 +74,6 @@ export function useCardForm(
       }
     });
   }, [card.title, onCommit]);
-
-  useEffect(() => {
-    if (!isOpen || !boardId) return;
-    const fetchMembers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/boards/${boardId}/members`, {
-          credentials: "include",
-        });
-        if (res.ok) setMembers(await res.json());
-      } catch (err) {
-        console.error("Failed to fetch members", err);
-      }
-    };
-    fetchMembers();
-  }, [isOpen, boardId]);
 
   // Cached per field — a fresh closure per render defeats React.memo.
   type ChangeHandler = (

@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import type { Tag } from "@/types/board";
 import { TagChip } from "@/components/board/task-board/TagChip";
 import { COLUMN_COLOR_PALETTE } from "@/components/board/task-board/ColumnOptionsModal";
-import { API_URL } from "@/lib/constants";
+import { ApiError, apiClient, toastFailure } from "@/lib/apiClient";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 const TAG_COLORS = COLUMN_COLOR_PALETTE.filter((c) => c.key !== null) as {
@@ -45,9 +45,8 @@ function TagSelectorImpl({ boardId, selected, onChange, onCommit, canEdit }: Tag
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/boards/${boardId}/tags`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((data: Tag[]) => {
+    apiClient<Tag[]>(`/boards/${boardId}/tags`)
+      .then((data) => {
         if (!cancelled) setBoardTags(Array.isArray(data) ? data : []);
       })
       .catch(() => {
@@ -115,20 +114,15 @@ function TagSelectorImpl({ boardId, selected, onChange, onCommit, canEdit }: Tag
     const name = query.trim();
     if (!name) return;
     try {
-      const res = await fetch(`${API_URL}/boards/${boardId}/tags`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, color: newColor }),
-      });
-      if (!res.ok) return;
-      const tag: Tag = await res.json();
+      const tag = await apiClient<Tag>(`/boards/${boardId}/tags`, { data: { name, color: newColor } });
       setBoardTags((prev) => [...prev, tag]);
       handleSelect(tag);
       setCreating(false);
       setNewColor(TAG_COLORS[0].key);
-    } catch {
-      // Keep the form open so the user can retry.
+    } catch (err) {
+      // The form stays open so the user can retry or rename.
+      const taken = err instanceof ApiError && err.code === "tag_name_taken";
+      toastFailure(err, taken ? "มี tag ชื่อนี้ในบอร์ดแล้ว" : "สร้าง tag ไม่สำเร็จ");
     }
   };
 

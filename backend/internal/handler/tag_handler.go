@@ -52,6 +52,8 @@ func (h *TagHandler) CreateBoardTag(w http.ResponseWriter, r *http.Request) erro
 		switch {
 		case errors.Is(err, service.ErrTagNameEmpty), errors.Is(err, service.ErrTagNameTooLong):
 			return httputil.NewAPIError(http.StatusUnprocessableEntity, err.Error(), err)
+		case errors.Is(err, service.ErrTagNameTaken):
+			return httputil.NewAPIError(http.StatusConflict, err.Error(), err).WithCode("tag_name_taken")
 		default:
 			// Don't leak raw DB errors.
 			return httputil.NewAPIError(http.StatusInternalServerError, "Failed to create tag", err)

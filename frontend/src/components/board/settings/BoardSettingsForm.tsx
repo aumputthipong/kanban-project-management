@@ -23,15 +23,17 @@ export function BoardSettingsForm({ boardId, board }: BoardSettingsFormProps) {
   const canManage = useCanManageBoard();
   const canDelete = useCanDeleteBoard();
 
-  // Also update the persistent BoardHeader so it reflects edits live.
-  const saveField = (field: string, value: string | number) => {
-    if (
-      (field === "title" || field === "icon" || field === "color") &&
-      typeof value === "string"
-    ) {
-      patchBoardMeta({ [field]: value });
+  // Also update the persistent BoardHeader so it reflects edits live; undone if the save fails.
+  const saveField = async (field: string, value: string | number) => {
+    const isMeta = (field === "title" || field === "icon" || field === "color") && typeof value === "string";
+    const before = useBoardStore.getState().boardMeta;
+    if (isMeta) patchBoardMeta({ [field]: value });
+    try {
+      await updateField(field, value);
+    } catch (err) {
+      if (isMeta && before) patchBoardMeta({ [field]: before[field as keyof typeof before] });
+      throw err;
     }
-    return updateField(field, value);
   };
 
   const [active, setActive] = useState("sec-general");

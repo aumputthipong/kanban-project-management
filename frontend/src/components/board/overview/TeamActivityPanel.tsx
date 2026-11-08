@@ -123,7 +123,7 @@ export function TeamActivityPanel({
         {loading && activities.length === 0 ? (
           <ActivityFeedSkeleton />
         ) : error ? (
-          <p className="py-3 text-sm text-rose-500">Failed to load activity.</p>
+          <p className="py-3 text-sm text-slate-500">โหลดความเคลื่อนไหวไม่ได้ ลองรีเฟรชหน้า</p>
         ) : visible.length === 0 ? (
           <p className="py-3 text-sm text-slate-400">
             {filter === "all" ? "No activity yet." : "ไม่มีความเคลื่อนไหวในหมวดนี้"}

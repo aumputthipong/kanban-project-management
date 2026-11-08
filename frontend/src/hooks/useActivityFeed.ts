@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
-import { API_URL } from "@/lib/constants";
+import { apiClient } from "@/lib/apiClient";
+import type { Activity } from "@/types/activity";
 import { useActivityStore } from "@/store/useActivityStore";
 
 export function useActivityFeed(boardId: string | undefined, limit = 30) {
@@ -17,11 +18,7 @@ export function useActivityFeed(boardId: string | undefined, limit = 30) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/boards/${boardId}/activities?limit=${limit}`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(`Failed to fetch activities: ${res.status}`);
-        const data = await res.json();
+        const data = await apiClient<Activity[]>(`/boards/${boardId}/activities?limit=${limit}`);
         if (cancelled) return;
         useActivityStore.getState().setActivities(Array.isArray(data) ? data : []);
       } catch (err) {
