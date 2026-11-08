@@ -22,7 +22,7 @@ export function BoardMembersSection({ boardId }: BoardMembersSectionProps) {
     isLoading,
     isAdding,
     loadingId,
-    error,
+    loadFailed,
     addMember,
     removeMember,
     changeRole,
@@ -86,7 +86,7 @@ export function BoardMembersSection({ boardId }: BoardMembersSectionProps) {
         </div>
         <span className="inline-flex h-[30px] shrink-0 items-baseline gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3">
           <span className="text-[14px] font-bold leading-[30px] tracking-tight text-slate-900">
-            {members.length}
+            {loadFailed ? "–" : members.length}
           </span>
           <span className="text-[12px] font-semibold text-slate-400">Members</span>
         </span>
@@ -117,10 +117,12 @@ export function BoardMembersSection({ boardId }: BoardMembersSectionProps) {
         </div>
       </div>
 
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-
       {isLoading ? (
         <MemberGroupsSkeleton />
+      ) : loadFailed ? (
+        <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+          โหลดรายชื่อสมาชิกไม่ได้ ลองรีเฟรชหน้า
+        </p>
       ) : !hasVisible ? (
         <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-400">
           ไม่พบสมาชิกที่ตรงกับการค้นหา

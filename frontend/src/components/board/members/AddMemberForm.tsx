@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Mail, ChevronDown, UserPlus, Loader2 } from "lucide-react";
 import { useBoardRole } from "@/hooks/useBoardRole";
 import { grantableRoles } from "@/lib/permissions";
+import type { AddMemberResult } from "@/hooks/useBoardMembers";
 
 interface AddMemberFormProps {
   isAdding: boolean;
-  /** Returns an error message to show inline, or null on success. */
-  onAdd: (email: string, role: string) => Promise<string | null>;
+  onAdd: (email: string, role: string) => Promise<AddMemberResult>;
 }
 
 // Exact email only — there is no user directory to browse (privacy).
@@ -19,13 +19,9 @@ export function AddMemberForm({ isAdding, onAdd }: AddMemberFormProps) {
   const handleSubmit = async () => {
     const trimmed = email.trim();
     if (!trimmed || isAdding) return;
-    const err = await onAdd(trimmed, selectedRole);
-    if (err) {
-      setError(err);
-    } else {
-      setEmail("");
-      setError(null);
-    }
+    const result = await onAdd(trimmed, selectedRole);
+    setError(result.ok ? null : result.message);
+    if (result.ok) setEmail("");
   };
 
   return (

@@ -5,6 +5,7 @@ import { Copy, Check, RefreshCw, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { inviteApi, type InviteLink } from "@/lib/inviteApi";
 import { useToastStore } from "@/store/useToastStore";
+import { toastFailure } from "@/lib/apiClient";
 import { BUTTON_PRIMARY, ModalHeader, ModalShell } from "@/components/ui/Modal";
 import { FIELD_INPUT } from "@/components/board/card-modal/modalParts";
 
@@ -47,11 +48,11 @@ export function InviteLinkModal({
 
   const regenerate = async () => {
     setBusy(true);
-    setFailed(false);
     try {
       setLink(await inviteApi.create(boardId));
-    } catch {
-      showToast({ message: "สร้างลิงก์ใหม่ไม่สำเร็จ", duration: 4000 });
+      setFailed(false);
+    } catch (err) {
+      toastFailure(err, "สร้างลิงก์ใหม่ไม่สำเร็จ");
     } finally {
       setBusy(false);
     }
