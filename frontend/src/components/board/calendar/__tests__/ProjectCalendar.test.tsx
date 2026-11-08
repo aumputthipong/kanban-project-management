@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
 import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { server, apiUrl } from "@/test/server";
@@ -8,7 +8,13 @@ import { useBoardStore } from "@/store/useBoardStore";
 import { ProjectCalendar } from "../ProjectCalendar";
 
 // A zone behind UTC is where date-only strings parsed as UTC land on the previous day.
-process.env.TZ = "America/Los_Angeles";
+const originalTZ = process.env.TZ;
+beforeAll(() => {
+  process.env.TZ = "America/Los_Angeles";
+});
+afterAll(() => {
+  process.env.TZ = originalTZ;
+});
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
