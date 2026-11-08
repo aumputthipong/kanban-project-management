@@ -44,16 +44,20 @@ export function useBoardMembers(boardId: string) {
     setIsAdding(true);
     try {
       await apiClient(`/boards/${boardId}/members`, { data: { email, role } });
+    } catch (err) {
+      setIsAdding(false);
+      if (isHandledByApiClient(err)) return "";
+      return (err instanceof ApiError && ADD_MEMBER_ERRORS[err.status]) || "เพิ่มสมาชิกไม่สำเร็จ";
+    }
+    try {
       const fresh = clean(await apiClient(`/boards/${boardId}/members`));
       setMembers(fresh);
       setBoardMembers(fresh);
-      return null;
     } catch (err) {
-      if (isHandledByApiClient(err)) return "";
-      return (err instanceof ApiError && ADD_MEMBER_ERRORS[err.status]) || "เพิ่มสมาชิกไม่สำเร็จ";
-    } finally {
-      setIsAdding(false);
+      toastFailure(err, "เพิ่มสมาชิกแล้ว แต่โหลดรายชื่อใหม่ไม่ได้ ลองรีเฟรชหน้า");
     }
+    setIsAdding(false);
+    return null;
   };
 
   const removeMember = async (userId: string) => {

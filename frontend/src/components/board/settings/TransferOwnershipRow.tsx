@@ -34,14 +34,19 @@ export function TransferOwnershipRow({ boardId }: { boardId: string }) {
       await apiClient(`/boards/${boardId}/members/transfer-ownership`, {
         data: { user_id: target.user_id },
       });
-      const fresh: BoardMember[] = await apiClient(`/boards/${boardId}/members`);
-      setBoardMembers(Array.isArray(fresh) ? fresh.filter(Boolean) : []);
-      showToast({ message: `โอนสิทธิ์ Owner ให้ ${target.full_name} แล้ว — ตอนนี้คุณเป็น Manager`, duration: 5000 });
     } catch (err) {
       toastFailure(err, (err instanceof ApiError && TRANSFER_ERRORS[err.status]) || "โอนสิทธิ์ไม่สำเร็จ");
-    } finally {
       setTransferring(false);
+      return;
     }
+    showToast({ message: `โอนสิทธิ์ Owner ให้ ${target.full_name} แล้ว — ตอนนี้คุณเป็น Manager`, duration: 5000 });
+    try {
+      const fresh: BoardMember[] = await apiClient(`/boards/${boardId}/members`);
+      setBoardMembers(Array.isArray(fresh) ? fresh.filter(Boolean) : []);
+    } catch (err) {
+      toastFailure(err, "โหลดรายชื่อสมาชิกใหม่ไม่ได้ ลองรีเฟรชหน้า");
+    }
+    setTransferring(false);
   };
 
   return (

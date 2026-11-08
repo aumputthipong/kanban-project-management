@@ -73,6 +73,20 @@ describe("inviting by email", () => {
     expect(useBoardStore.getState().boardMembers.map((m) => m.user_id)).toContain("carl");
   });
 
+  it("counts the invite as done when only the list reload fails", async () => {
+    const { user } = await open();
+    server.use(
+      http.post(MEMBERS, () => new HttpResponse(null, { status: 201 })),
+      http.get(MEMBERS, () => HttpResponse.json({ error: "boom" }, { status: 500 }))
+    );
+    await user.type(emailBox(), "carl@x.com{Enter}");
+    await waitFor(() =>
+      expect(toastMessages()).toEqual(["เพิ่มสมาชิกแล้ว แต่โหลดรายชื่อใหม่ไม่ได้ ลองรีเฟรชหน้า"])
+    );
+    expect(emailBox()).toHaveValue("");
+    expect(screen.queryByText("เพิ่มสมาชิกไม่สำเร็จ")).not.toBeInTheDocument();
+  });
+
   it.each([
     [404, "ไม่พบผู้ใช้ที่มีอีเมลนี้"],
     [409, "ผู้ใช้นี้เป็นสมาชิกบอร์ดอยู่แล้ว"],

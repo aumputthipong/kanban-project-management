@@ -69,6 +69,21 @@ describe("transfer ownership", () => {
     expect(roles).toEqual({ me: "manager", ann: "owner" });
   });
 
+  it("reports the transfer as done when only the member reload fails", async () => {
+    server.use(
+      http.post(TRANSFER, () => new HttpResponse(null, { status: 204 })),
+      http.get(apiUrl("/boards/b1/members"), () => HttpResponse.json({ error: "boom" }, { status: 500 }))
+    );
+    const { user } = open();
+    await pickAndConfirm(user);
+    await waitFor(() =>
+      expect(toastMessages()).toEqual([
+        "โอนสิทธิ์ Owner ให้ Ann แล้ว — ตอนนี้คุณเป็น Manager",
+        "โหลดรายชื่อสมาชิกใหม่ไม่ได้ ลองรีเฟรชหน้า",
+      ])
+    );
+  });
+
   it.each([
     [404, "ไม่พบสมาชิกคนนี้ในบอร์ดแล้ว"],
     [409, "สิทธิ์ Owner ถูกเปลี่ยนไปแล้ว ลองรีเฟรชหน้า"],
