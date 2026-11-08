@@ -3,11 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, FileText, HelpCircle, Plus } from "lucide-react";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { useToastStore } from "@/store/useToastStore";
 import { planningApi } from "@/lib/planningApi";
+import { ApiError, toastFailure } from "@/lib/apiClient";
 import type { PlanningSessionSummary } from "@/types/planning";
 import { SessionRow } from "./SessionRow";
+import {
+  EmptyState,
+  ListSkeleton,
+  LoadFailedState,
+  StatPill,
+  loadFailureOf,
+  type LoadFailure,
+} from "./SessionListParts";
 
 interface Props {
   boardId: string;
@@ -17,17 +24,21 @@ export function SessionListView({ boardId }: Props) {
   const router = useRouter();
   const [sessions, setSessions] = useState<PlanningSessionSummary[] | null>(null);
   const [creating, setCreating] = useState(false);
-  const showToast = useToastStore((s) => s.show);
+  const [loadFailure, setLoadFailure] = useState<LoadFailure | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     planningApi
       .listSessions(boardId)
       .then((rows) => {
-        if (!cancelled) setSessions(rows);
+        if (cancelled) return;
+        setLoadFailure(null);
+        setSessions(rows);
       })
-      .catch(() => {
-        if (!cancelled) setSessions([]);
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadFailure(loadFailureOf(err instanceof ApiError ? err.status : undefined));
+        setSessions([]);
       });
     return () => {
       cancelled = true;
@@ -42,11 +53,11 @@ export function SessionListView({ boardId }: Props) {
         title: defaultSessionTitle(),
       });
       router.push(`/board/${boardId}/planning/${sess.id}`);
-    } catch {
-      showToast({ message: "สร้างบันทึกใหม่ไม่ได้", duration: 4000 });
+    } catch (err) {
+      toastFailure(err, "สร้างบันทึกใหม่ไม่ได้");
       setCreating(false);
     }
-  }, [boardId, creating, router, showToast]);
+  }, [boardId, creating, router]);
 
   const handleRename = async (id: string, title: string) => {
     const prevTitle = sessions?.find((s) => s.id === id)?.title ?? "";
@@ -56,8 +67,8 @@ export function SessionListView({ boardId }: Props) {
     );
     try {
       await planningApi.updateSession(id, { title });
-    } catch {
-      showToast({ message: "เปลี่ยนชื่อบันทึกไม่สำเร็จ", duration: 4000 });
+    } catch (err) {
+      toastFailure(err, "เปลี่ยนชื่อบันทึกไม่สำเร็จ");
       setSessions((cur) =>
         cur ? cur.map((s) => (s.id === id ? { ...s, title: prevTitle } : s)) : cur,
       );
@@ -98,7 +109,9 @@ export function SessionListView({ boardId }: Props) {
         </button>
       </div>
 
-      {sessions.length === 0 ? (
+      {loadFailure ? (
+        <LoadFailedState reason={loadFailure} />
+      ) : sessions.length === 0 ? (
         <EmptyState onCreate={createSession} creating={creating} />
       ) : (
         <>
@@ -140,69 +153,6 @@ export function SessionListView({ boardId }: Props) {
           ))}
         </>
       )}
-    </div>
-  );
-}
-
-function StatPill({
-  icon,
-  variant = "neutral",
-  children,
-}: {
-  icon: React.ReactNode;
-  variant?: "neutral" | "alert" | "ok";
-  children: React.ReactNode;
-}) {
-  const styles = {
-    neutral: "border-slate-200 bg-white text-slate-600 [&>svg]:text-slate-400",
-    alert: "border-amber-200 bg-amber-50 text-amber-700 [&>svg]:text-amber-600",
-    ok: "border-emerald-200 bg-emerald-50 text-emerald-700 [&>svg]:text-emerald-600",
-  }[variant];
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${styles}`}
-    >
-      {icon}
-      <span>{children}</span>
-    </span>
-  );
-}
-
-function EmptyState({ onCreate, creating }: { onCreate: () => void; creating: boolean }) {
-  return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-12 text-center">
-      <FileText size={32} className="mx-auto mb-3 text-slate-400" />
-      <h3 className="text-base font-semibold text-slate-800">
-        No notes yet
-      </h3>
-      <p className="mt-1 mb-4 text-sm text-slate-500">
-        เริ่มจดไอเดียแรก · สิ่งที่ตกลงกัน · คำถามที่ค้างใจ
-        <br />
-        แล้วเลือกบางอันส่งเข้า Board ตอนพร้อม
-      </p>
-      <button
-        type="button"
-        onClick={onCreate}
-        disabled={creating}
-        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
-      >
-        <Plus size={14} />
-        New Note
-      </button>
-    </div>
-  );
-}
-
-function ListSkeleton() {
-  return (
-    <div>
-      <Skeleton className="mb-2 h-7 w-40" />
-      <Skeleton className="mb-6 h-4 w-72" />
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-xl" />
-        ))}
-      </div>
     </div>
   );
 }

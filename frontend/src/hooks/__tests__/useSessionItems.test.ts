@@ -309,4 +309,127 @@ describe("promote", () => {
     expect(tried).toEqual(["a"]);
     expect(toastMessages()).toEqual(["ไม่มีสิทธิ์"]);
   });
+
+  // Status + code as planning_handler.go PromoteItem sends them; the text is the client's.
+  const ALREADY = "Note นี้ส่งเข้า Board ไปแล้ว";
+  const DROPPED = "Note นี้ถูกพักไว้ เอากลับมาก่อนแล้วค่อยส่งเข้า Board";
+  const NO_TODO = "บอร์ดยังไม่มีคอลัมน์ TODO เพิ่มคอลัมน์ก่อนแล้วค่อยส่งเข้า Board";
+  const refuse = (status: number, code: string) => () =>
+    HttpResponse.json({ error: "server wording", code }, { status });
+
+  it("promoteOne treats already_promoted as on the board", async () => {
+    server.use(http.post(apiUrl("/planning/items/i1/promote"), refuse(409, "already_promoted")));
+    const { result } = await setup();
+    await act(() => result.current.promoteOne(item(result, "i1")!));
+    expect(item(result, "i1")?.status).toBe("promoted");
+    expect(toastMessages()).toEqual([ALREADY]);
+  });
+
+  it("promoteOne explains a board without a TODO column", async () => {
+    server.use(http.post(apiUrl("/planning/items/i1/promote"), refuse(422, "no_todo_column")));
+    const { result } = await setup();
+    await act(() => result.current.promoteOne(item(result, "i1")!));
+    expect(item(result, "i1")?.status).toBe("live");
+    expect(toastMessages()).toEqual([NO_TODO]);
+  });
+
+  it("promoteOne marks a Note a teammate dropped and says why", async () => {
+    server.use(http.post(apiUrl("/planning/items/i1/promote"), refuse(422, "item_dropped")));
+    const { result } = await setup();
+    await act(() => result.current.promoteOne(item(result, "i1")!));
+    expect(item(result, "i1")?.status).toBe("dropped");
+    expect(toastMessages()).toEqual([DROPPED]);
+  });
+
+  it("promoteMany stops at the first no_todo_column and says it once", async () => {
+    const tried: string[] = [];
+    server.use(
+      http.post(apiUrl("/planning/items/:id/promote"), ({ params }) => {
+        tried.push(String(params.id));
+        return refuse(422, "no_todo_column")();
+      })
+    );
+    const { result } = await setup([
+      makeItem({ id: "a" }),
+      makeItem({ id: "b" }),
+      makeItem({ id: "c" }),
+    ]);
+    await act(() => result.current.promoteMany(["a", "b", "c"]));
+    expect(tried).toEqual(["a"]);
+    expect(toastMessages()).toEqual([NO_TODO]);
+  });
+
+  it("promoteMany keeps going past Notes a teammate dropped, even several in a row", async () => {
+    const tried: string[] = [];
+    server.use(
+      http.post(apiUrl("/planning/items/:id/promote"), ({ params }) => {
+        const id = String(params.id);
+        tried.push(id);
+        return id === "b" || id === "c" ? refuse(422, "item_dropped")() : promoted(id);
+      })
+    );
+    const { result } = await setup(["a", "b", "c", "d", "e"].map((id) => makeItem({ id })));
+    await act(() => result.current.promoteMany(["a", "b", "c", "d", "e"]));
+    expect(tried).toEqual(["a", "b", "c", "d", "e"]);
+    expect(item(result, "b")?.status).toBe("dropped");
+    expect(toastMessages()).toEqual(["ส่งเข้า Board แล้ว 3 รายการ · ข้าม 2 รายการที่พักไว้"]);
+  });
+
+  it("promoteMany still reports skipped Notes when nothing else went through", async () => {
+    server.use(
+      http.post(apiUrl("/planning/items/a/promote"), fail(500)),
+    );
+    const { result } = await setup([
+      makeItem({ id: "a", title: "First" }),
+      makeItem({ id: "d", status: "dropped" }),
+    ]);
+    await act(() => result.current.promoteMany(["a", "d"]));
+    expect(toastMessages()).toEqual([
+      "ส่งเข้า Board ไม่ได้: First",
+      "ข้าม 1 รายการที่พักไว้ เอากลับมาก่อนแล้วค่อยส่ง",
+    ]);
+  });
+
+  it("promoteOne names the Note on a 422 it has no code for", async () => {
+    server.use(
+      http.post(apiUrl("/planning/items/i1/promote"), () =>
+        HttpResponse.json({ error: "something new" }, { status: 422 })
+      )
+    );
+    const { result } = await setup();
+    await act(() => result.current.promoteOne(item(result, "i1")!));
+    expect(toastMessages()).toEqual(["ส่งเข้า Board ไม่ได้: Login page"]);
+  });
+
+  it("promoteMany counts already_promoted as on the board and marks it promoted", async () => {
+    server.use(
+      http.post(apiUrl("/planning/items/a/promote"), refuse(409, "already_promoted")),
+      http.post(apiUrl("/planning/items/c/promote"), () => promoted("c"))
+    );
+    const { result } = await setup([makeItem({ id: "a" }), makeItem({ id: "c" })]);
+    await act(() => result.current.promoteMany(["a", "c"]));
+    expect(item(result, "a")?.status).toBe("promoted");
+    expect(toastMessages()).toEqual(["ส่งเข้า Board แล้ว 2 รายการ"]);
+  });
+
+  it("promoteMany leaves out dropped Notes, which the server would refuse", async () => {
+    const tried: string[] = [];
+    server.use(
+      http.post(apiUrl("/planning/items/:id/promote"), ({ params }) => {
+        tried.push(String(params.id));
+        return promoted(String(params.id));
+      })
+    );
+    const { result } = await setup([makeItem({ id: "a" }), makeItem({ id: "d", status: "dropped" })]);
+    await act(() => result.current.promoteMany(["a", "d"]));
+    expect(tried).toEqual(["a"]);
+    expect(toastMessages()).toEqual(["ส่งเข้า Board แล้ว 1 รายการ · ข้าม 1 รายการที่พักไว้"]);
+  });
+
+  it("promoteMany says so when every selected Note is dropped", async () => {
+    const { result } = await setup([makeItem({ id: "d", status: "dropped" })]);
+    await act(() => result.current.promoteMany(["d"]));
+    expect(toastMessages()).toEqual(["Note ที่เลือกถูกพักไว้ทั้งหมด เอากลับมาก่อนแล้วค่อยส่ง"]);
+  });
 });
+

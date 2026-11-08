@@ -68,6 +68,18 @@ describe("apiClient errors", () => {
     expect(err).toMatchObject({ status: 404, message: "board not found" });
   });
 
+  it("carries the server's error code when there is one", async () => {
+    server.use(
+      http.post(apiUrl("/planning/items/i1/promote"), () =>
+        HttpResponse.json({ error: "nope", code: "no_todo_column" }, { status: 422 })
+      )
+    );
+    await expect(apiClient("/planning/items/i1/promote", { method: "POST" })).rejects.toMatchObject({
+      status: 422,
+      code: "no_todo_column",
+    });
+  });
+
   it("falls back to the message field", async () => {
     server.use(
       http.get(apiUrl("/boards/x"), () =>

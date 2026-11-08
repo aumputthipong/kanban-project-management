@@ -13,6 +13,8 @@ type APIError struct {
 	StatusCode int
 	Message    string
 	Err        error
+	// Code is a stable machine-readable reason for clients that branch on it; Message may change.
+	Code string
 }
 
 func (e *APIError) Error() string {
@@ -30,6 +32,11 @@ func NewAPIError(statusCode int, message string, err error) *APIError {
 	}
 }
 
+func (e *APIError) WithCode(code string) *APIError {
+	e.Code = code
+	return e
+}
+
 type APIFunc func(w http.ResponseWriter, r *http.Request) error
 
 // 5xx log at Error and go to Sentry; 4xx log at Info.
@@ -42,10 +49,12 @@ func MakeHandler(h APIFunc) http.HandlerFunc {
 
 		status := http.StatusInternalServerError
 		message := "Internal server error"
+		code := ""
 		var apiErr *APIError
 		if errors.As(err, &apiErr) {
 			status = apiErr.StatusCode
 			message = apiErr.Message
+			code = apiErr.Code
 		}
 
 		reqID := chiMiddleware.GetReqID(r.Context())
@@ -72,6 +81,6 @@ func MakeHandler(h APIFunc) http.HandlerFunc {
 			)
 		}
 
-		RespondError(w, status, message)
+		RespondJSON(w, status, ErrorResponse{Error: message, Code: code})
 	}
 }

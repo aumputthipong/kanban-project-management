@@ -31,6 +31,21 @@ export interface UseSessionItemsResult {
   promoteOne: (item: PlanningItem) => Promise<void>;
 }
 
+type PromoteOutcome = "sent" | keyof typeof PROMOTE_MESSAGES | "failed" | "stop";
+
+// Our wording for the promote endpoint's error codes (planning_handler.go).
+const PROMOTE_MESSAGES = {
+  already: "Note นี้ส่งเข้า Board ไปแล้ว",
+  dropped: "Note นี้ถูกพักไว้ เอากลับมาก่อนแล้วค่อยส่งเข้า Board",
+  noTodoColumn: "บอร์ดยังไม่มีคอลัมน์ TODO เพิ่มคอลัมน์ก่อนแล้วค่อยส่งเข้า Board",
+} as const;
+
+function batchSummary(sent: number, skipped: number): string | null {
+  const skippedNote = `ข้าม ${skipped} รายการที่พักไว้`;
+  if (sent > 0) return `ส่งเข้า Board แล้ว ${sent} รายการ${skipped > 0 ? ` · ${skippedNote}` : ""}`;
+  return skipped > 0 ? `${skippedNote} เอากลับมาก่อนแล้วค่อยส่ง` : null;
+}
+
 export function useSessionItems(
   boardId: string,
   sessionId: string,
@@ -178,47 +193,71 @@ export function useSessionItems(
     [],
   );
 
-  const promoteOne = useCallback(
-    async (item: PlanningItem) => {
+  const markStatus = useCallback((id: string, status: PlanningItemStatus) => {
+    setItems((prev) => prev.map((cur) => (cur.id === id ? { ...cur, status } : cur)));
+  }, []);
+
+  const promoteOnce = useCallback(
+    async (item: PlanningItem): Promise<PromoteOutcome> => {
       try {
         const res = await planningApi.promoteItem(item.id);
-        setItems((prev) =>
-          prev.map((cur) => (cur.id === item.id ? res.item : cur)),
-        );
-        showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
+        setItems((prev) => prev.map((cur) => (cur.id === item.id ? res.item : cur)));
+        return "sent";
       } catch (err) {
+        const code = err instanceof ApiError ? err.code : undefined;
+        if (code === "already_promoted") {
+          markStatus(item.id, "promoted");
+          return "already";
+        }
+        if (code === "item_dropped") {
+          markStatus(item.id, "dropped");
+          return "dropped";
+        }
+        if (code === "no_todo_column") return "noTodoColumn";
         toastFailure(err, `ส่งเข้า Board ไม่ได้: ${item.title}`);
+        return isHandledByApiClient(err) ? "stop" : "failed";
       }
     },
-    [showToast],
+    [markStatus],
+  );
+
+  const promoteOne = useCallback(
+    async (item: PlanningItem) => {
+      const outcome = await promoteOnce(item);
+      if (outcome === "sent") showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
+      else if (outcome in PROMOTE_MESSAGES) {
+        showToast({ message: PROMOTE_MESSAGES[outcome as keyof typeof PROMOTE_MESSAGES], duration: 5000 });
+      }
+    },
+    [promoteOnce, showToast],
   );
 
   const promoteMany = useCallback(
     async (ids: string[]) => {
       const idSet = new Set(ids);
-      const targets = items.filter(
-        (it) => idSet.has(it.id) && it.status !== "promoted",
-      );
-      if (targets.length === 0) return;
+      const chosen = items.filter((it) => idSet.has(it.id) && it.status !== "promoted");
+      const targets = chosen.filter((it) => it.status !== "dropped");
+      if (chosen.length > 0 && targets.length === 0) {
+        showToast({ message: "Note ที่เลือกถูกพักไว้ทั้งหมด เอากลับมาก่อนแล้วค่อยส่ง", duration: 4000 });
+        return;
+      }
       // Sequential to keep board card positions stable.
-      let sent = 0;
+      let onBoard = 0;
+      let skipped = chosen.length - targets.length;
       for (const it of targets) {
-        try {
-          const res = await planningApi.promoteItem(it.id);
-          setItems((prev) =>
-            prev.map((cur) => (cur.id === it.id ? res.item : cur)),
-          );
-          sent++;
-        } catch (err) {
-          toastFailure(err, `ส่งเข้า Board ไม่ได้: ${it.title}`);
-          if (isHandledByApiClient(err)) break;
+        const outcome = await promoteOnce(it);
+        if (outcome === "sent" || outcome === "already") onBoard++;
+        if (outcome === "dropped") skipped++;
+        if (outcome === "noTodoColumn") {
+          showToast({ message: PROMOTE_MESSAGES.noTodoColumn, duration: 5000 });
+          break;
         }
+        if (outcome === "stop") break;
       }
-      if (sent > 0) {
-        showToast({ message: `ส่งเข้า Board แล้ว ${sent} รายการ`, duration: 3000 });
-      }
+      const summary = batchSummary(onBoard, skipped);
+      if (summary) showToast({ message: summary, duration: 3000 });
     },
-    [items, showToast],
+    [items, promoteOnce, showToast],
   );
 
   return {

@@ -7,7 +7,7 @@ interface FetchOptions extends Omit<RequestInit, "body"> {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public code?: string) {
     super(message);
     this.name = "ApiError";
   }
@@ -88,9 +88,11 @@ export async function apiClient<T = unknown>(
 
   if (!response.ok) {
     let errorMessage = "Something went wrong";
+    let errorCode: string | undefined;
     try {
       const errorData = await response.json();
       errorMessage = errorData.error || errorData.message || errorMessage;
+      errorCode = typeof errorData.code === "string" ? errorData.code : undefined;
     } catch {
       errorMessage = response.statusText || errorMessage;
     }
@@ -100,7 +102,7 @@ export async function apiClient<T = unknown>(
         duration: 5000,
       });
     }
-    throw new ApiError(response.status, errorMessage);
+    throw new ApiError(response.status, errorMessage, errorCode);
   }
 
   if (response.status === 204) {
