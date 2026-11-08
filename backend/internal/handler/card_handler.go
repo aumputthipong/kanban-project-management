@@ -32,6 +32,20 @@ func boardMembership(ctx context.Context, svc service.BoardServicer, boardID, us
 	return core.BoardRole(role), nil
 }
 
+// An outsider as assignee would see the card in My Work without being on the board.
+func requireAssignableMember(ctx context.Context, svc service.BoardServicer, boardID string, assigneeID *string) *httputil.APIError {
+	if assigneeID == nil || *assigneeID == "" {
+		return nil
+	}
+	if _, err := svc.GetBoardMemberRole(ctx, boardID, *assigneeID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return httputil.NewAPIError(http.StatusUnprocessableEntity, "Assignee is not a member of this board", nil).WithCode("assignee_not_member")
+		}
+		return httputil.NewAPIError(http.StatusInternalServerError, "Failed to check assignee", err)
+	}
+	return nil
+}
+
 func canEditCard(card db.Card, userID string, role core.BoardRole) bool {
 	isCreator := card.CreatedBy != nil && *card.CreatedBy == userID
 	isAssignee := card.AssigneeID != nil && *card.AssigneeID == userID
@@ -52,6 +66,7 @@ func (h *BoardHandler) requireBoardMembership(r *http.Request, boardID, userID s
 // @Success  200     {object} dto.CardResponse
 // @Failure  400     {object} httputil.ErrorResponse
 // @Failure  404     {object} httputil.ErrorResponse
+// @Failure  422     {object} httputil.ErrorResponse "code: assignee_not_member"
 // @Router   /api/cards/{cardID} [patch]
 func (h *BoardHandler) UpdateCard(w http.ResponseWriter, r *http.Request) error {
 	cardIDStr := chi.URLParam(r, "cardID")
@@ -75,7 +90,7 @@ func (h *BoardHandler) UpdateCard(w http.ResponseWriter, r *http.Request) error 
 	existing, err := h.boardService.GetCard(r.Context(), cardIDStr)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
-			return httputil.NewAPIError(http.StatusNotFound, "Card not found", nil)
+			return httputil.NewAPIError(http.StatusNotFound, "Not found", nil)
 		}
 		return httputil.NewAPIError(http.StatusInternalServerError, "Failed to load card", err)
 	}
@@ -91,6 +106,9 @@ func (h *BoardHandler) UpdateCard(w http.ResponseWriter, r *http.Request) error 
 
 	if !canEditCard(existing, userIDStr, role) {
 		return httputil.NewAPIError(http.StatusForbidden, "You do not have permission to edit this card", nil)
+	}
+	if apiErr := requireAssignableMember(r.Context(), h.boardService, boardID, req.AssigneeID); apiErr != nil {
+		return apiErr
 	}
 
 	updated, err := h.boardService.UpdateCard(r.Context(), service.UpdateCardParams{
@@ -159,9 +177,21 @@ func (h *BoardHandler) GetCard(w http.ResponseWriter, r *http.Request) error {
 	detail, err := h.boardService.GetCardDetail(r.Context(), cardIDStr)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, sql.ErrNoRows) {
-			return httputil.NewAPIError(http.StatusNotFound, "Card not found", nil)
+			return httputil.NewAPIError(http.StatusNotFound, "Not found", nil)
 		}
 		return httputil.NewAPIError(http.StatusInternalServerError, "Internal server error", err)
+	}
+
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		return httputil.NewAPIError(http.StatusUnauthorized, "Unauthorized", nil)
+	}
+	boardID, err := h.boardService.GetBoardIDByColumn(r.Context(), detail.Card.ColumnID)
+	if err != nil {
+		return httputil.NewAPIError(http.StatusInternalServerError, "Failed to resolve board", err)
+	}
+	if _, apiErr := h.requireBoardMembership(r, boardID, userID); apiErr != nil {
+		return apiErr
 	}
 
 	httputil.RespondJSON(w, http.StatusOK, mapper.ToCardDetailResponse(detail))

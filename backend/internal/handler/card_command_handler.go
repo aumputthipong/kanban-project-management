@@ -156,6 +156,7 @@ func (h *BoardCommandHandler) ToggleCardDone(w http.ResponseWriter, r *http.Requ
 // @Success  201     {object} dto.CardResponse
 // @Failure  400     {object} httputil.ErrorResponse
 // @Failure  404     {object} httputil.ErrorResponse
+// @Failure  422     {object} httputil.ErrorResponse "code: assignee_not_member"
 // @Router   /api/cards [post]
 func (h *BoardCommandHandler) CreateCard(w http.ResponseWriter, r *http.Request) error {
 	var req dto.CreateCardRequest
@@ -172,6 +173,9 @@ func (h *BoardCommandHandler) CreateCard(w http.ResponseWriter, r *http.Request)
 		return httputil.NewAPIError(http.StatusNotFound, "Not found", nil)
 	}
 	if _, apiErr := boardMembership(r.Context(), h.boardService, boardID, userID); apiErr != nil {
+		return apiErr
+	}
+	if apiErr := requireAssignableMember(r.Context(), h.boardService, boardID, req.AssigneeID); apiErr != nil {
 		return apiErr
 	}
 

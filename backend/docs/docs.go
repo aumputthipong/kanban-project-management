@@ -563,6 +563,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse"
                         }
+                    },
+                    "422": {
+                        "description": "code: assignee_not_member",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -694,6 +700,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "code: assignee_not_member",
                         "schema": {
                             "$ref": "#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse"
                         }

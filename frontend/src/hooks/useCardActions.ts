@@ -1,8 +1,14 @@
 import { useBoardStore } from "@/store/useBoardStore";
 import { POSITION_GAP } from "@/utils/boardPosition";
-import { apiClient, toastFailure } from "@/lib/apiClient";
+import { ApiError, apiClient, toastFailure } from "@/lib/apiClient";
 import { buildCardFieldUpdate, type CardField } from "@/lib/cardPatch";
 import type { Card, CardUpdateForm, Column } from "@/types/board";
+
+// The member was removed while this form was open (backend code, not message text).
+const assigneeGone = (err: unknown, fallback: string) =>
+  err instanceof ApiError && err.code === "assignee_not_member"
+    ? "ผู้รับผิดชอบคนนี้ไม่ได้อยู่ใน Project แล้ว — เลือกคนอื่น"
+    : fallback;
 
 function revertWith(snapshot: Column[], message: string) {
   return (err: unknown) => {
@@ -87,7 +93,7 @@ export function useCardActions() {
           completed_subtasks: 0,
         });
       })
-      .catch((err) => toastFailure(err, "สร้างการ์ดไม่สำเร็จ"));
+      .catch((err) => toastFailure(err, assigneeGone(err, "สร้างการ์ดไม่สำเร็จ")));
   };
 
   const handleChangeColumn = (cardId: string, toColumnId: string) => {
@@ -136,7 +142,7 @@ export function useCardActions() {
       () => true,
       (err) => {
         restoreFields(cardId, current, patch);
-        toastFailure(err, "บันทึกการ์ดไม่สำเร็จ — ลองอีกครั้ง");
+        toastFailure(err, assigneeGone(err, "บันทึกการ์ดไม่สำเร็จ — ลองอีกครั้ง"));
         return false;
       },
     );

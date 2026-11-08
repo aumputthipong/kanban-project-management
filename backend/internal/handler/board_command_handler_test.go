@@ -503,3 +503,29 @@ func TestMoveCard_AlsoBroadcastsTheActivityRow(t *testing.T) {
 	}
 	assert.Equal(t, []string{"ACTIVITY_CREATED", "CARD_MOVED"}, types)
 }
+
+func TestCreateCard_AssigneeNotOnBoard_Returns422AndCreatesNothing(t *testing.T) {
+	boards := memberBoardService()
+	boards.GetBoardMemberRoleFn = func(ctx context.Context, boardID, userID string) (string, error) {
+		if userID == otherUserID {
+			return "", pgx.ErrNoRows
+		}
+		return "member", nil
+	}
+	cmd := &mock.MockBoardCommandService{
+		CreateCardWSFn: func(ctx context.Context, columnID, creatorID, title, priority string, position float64, assigneeID, dueDate, description *string, subtaskTitles []string) (db.CreateCardRow, []db.CardSubtask, error) {
+			t.Fatal("must not create a card assigned to an outsider")
+			return db.CreateCardRow{}, nil, nil
+		},
+	}
+	h, bc := newCmdHandler(cmd, boards)
+
+	req := createCardReq(t, `{"column_id":"`+validColumnID+`","title":"New","assignee_id":"`+otherUserID+`"}`)
+	w := httptest.NewRecorder()
+
+	httputil.MakeHandler(h.CreateCard)(w, req)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	assert.Contains(t, w.Body.String(), `"code":"assignee_not_member"`)
+	assert.Empty(t, bc.Sent)
+}

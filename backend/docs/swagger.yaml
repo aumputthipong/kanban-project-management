@@ -830,6 +830,10 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
+        "422":
+          description: 'code: assignee_not_member'
+          schema:
+            $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
       security:
       - CookieAuth: []
       summary: Create card
@@ -912,6 +916,10 @@ paths:
             $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
         "404":
           description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
+        "422":
+          description: 'code: assignee_not_member'
           schema:
             $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
       security:

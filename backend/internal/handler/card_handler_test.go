@@ -334,25 +334,62 @@ func TestUpdateCard_PATCHSemantics_EmptyTitleRejected(t *testing.T) {
 
 // GetCard
 
-func TestGetCard_Success_RoundtripsTitle(t *testing.T) {
-	svc := &mock.MockBoardService{
+func cardDetailService(memberErr error) *mock.MockBoardService {
+	return &mock.MockBoardService{
 		GetCardDetailFn: func(ctx context.Context, cardID string) (service.CardDetailData, error) {
-			return service.CardDetailData{Card: db.Card{ID: cardID, Title: "Hello"}}, nil
+			return service.CardDetailData{Card: db.Card{ID: cardID, ColumnID: validColumnID, Title: "Hello"}}, nil
+		},
+		GetBoardIDByColumnFn: func(ctx context.Context, columnID string) (string, error) {
+			return validBoardID, nil
+		},
+		GetBoardMemberRoleFn: func(ctx context.Context, boardID, userID string) (string, error) {
+			if memberErr != nil {
+				return "", memberErr
+			}
+			return "member", nil
 		},
 	}
-	h := NewBoardHandler(svc, nil, nil, nil)
+}
 
+func getCard(t *testing.T, svc *mock.MockBoardService) *httptest.ResponseRecorder {
+	t.Helper()
+	h := NewBoardHandler(svc, nil, nil, nil)
 	req := withUserID(httptest.NewRequest(http.MethodGet, "/cards/"+validCardID, nil), validUserID)
 	req = chiCtx(req, "cardID", validCardID)
 	w := httptest.NewRecorder()
-
 	httputil.MakeHandler(h.GetCard)(w, req)
+	return w
+}
+
+func TestGetCard_Success_RoundtripsTitle(t *testing.T) {
+	w := getCard(t, cardDetailService(nil))
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var body map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&body))
 	assert.Equal(t, "Hello", body["title"])
+}
+
+func TestGetCard_NonMember_Returns404LikeAMissingCard(t *testing.T) {
+	outsider := getCard(t, cardDetailService(pgx.ErrNoRows))
+	missing := getCard(t, &mock.MockBoardService{
+		GetCardDetailFn: func(ctx context.Context, cardID string) (service.CardDetailData, error) {
+			return service.CardDetailData{}, pgx.ErrNoRows
+		},
+	})
+
+	assert.Equal(t, http.StatusNotFound, outsider.Code)
+	assert.NotContains(t, outsider.Body.String(), "Hello")
+	assert.Equal(t, missing.Code, outsider.Code)
+	assert.JSONEq(t, missing.Body.String(), outsider.Body.String())
+}
+
+func TestGetCard_MembershipLookupFails_Returns500(t *testing.T) {
+	w := getCard(t, cardDetailService(errors.New("db down")))
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.NotContains(t, w.Body.String(), "Hello")
 }
 
 func TestGetCard_InvalidID_Returns400(t *testing.T) {
@@ -629,4 +666,63 @@ func TestUpdateCard_InvalidClearableValues_Return400(t *testing.T) {
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 		})
 	}
+}
+
+// Assignee must be a board member
+
+func assigneeCheckService(t *testing.T, outsider string) *mock.MockBoardService {
+	return &mock.MockBoardService{
+		GetCardFn: func(ctx context.Context, cardID string) (db.Card, error) {
+			return cardOwnedBy(ptr(validUserID), nil), nil
+		},
+		GetBoardIDByColumnFn: func(ctx context.Context, columnID string) (string, error) {
+			return validBoardID, nil
+		},
+		GetBoardMemberRoleFn: func(ctx context.Context, boardID, userID string) (string, error) {
+			assert.Equal(t, validBoardID, boardID)
+			if userID == outsider {
+				return "", pgx.ErrNoRows
+			}
+			return "member", nil
+		},
+		UpdateCardFn: func(ctx context.Context, arg service.UpdateCardParams) (service.UpdateCardResult, error) {
+			return service.UpdateCardResult{Card: cardOwnedBy(ptr(validUserID), arg.AssigneeID.Value)}, nil
+		},
+	}
+}
+
+func patchCard(t *testing.T, svc *mock.MockBoardService, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	h := NewBoardHandler(svc, nil, nil, nil)
+	req := withUserID(httptest.NewRequest(http.MethodPatch, "/cards/"+validCardID, strings.NewReader(body)), validUserID)
+	req.Header.Set("Content-Type", "application/json")
+	req = chiCtx(req, "cardID", validCardID)
+	w := httptest.NewRecorder()
+	httputil.MakeHandler(h.UpdateCard)(w, req)
+	return w
+}
+
+func TestUpdateCard_AssigneeNotOnBoard_Returns422AndSavesNothing(t *testing.T) {
+	svc := assigneeCheckService(t, otherUserID)
+	svc.UpdateCardFn = func(ctx context.Context, arg service.UpdateCardParams) (service.UpdateCardResult, error) {
+		t.Fatal("must not save an outsider as assignee")
+		return service.UpdateCardResult{}, nil
+	}
+
+	w := patchCard(t, svc, `{"assignee_id":"`+otherUserID+`"}`)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	assert.Contains(t, w.Body.String(), `"code":"assignee_not_member"`)
+}
+
+func TestUpdateCard_AssigneeOnBoard_Saves(t *testing.T) {
+	w := patchCard(t, assigneeCheckService(t, "nobody"), `{"assignee_id":"`+otherUserID+`"}`)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestUpdateCard_ClearingAssignee_SkipsTheMemberCheck(t *testing.T) {
+	w := patchCard(t, assigneeCheckService(t, ""), `{"assignee_id":""}`)
+
+	assert.Equal(t, http.StatusOK, w.Code)
 }

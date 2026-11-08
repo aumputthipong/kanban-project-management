@@ -128,6 +128,8 @@ the behaviour.
   already see the card, so there is nothing left to hide.
 - Removing a member evicts their sockets: membership is only checked at the
   WS handshake.
+- A card's assignee must be a board member (422 `assignee_not_member` on create
+  and update), otherwise the card shows in an outsider's My Work.
 - Removing a member (or leaving) unassigns their **open** cards on that board in
   the same transaction: someone who can't open the board can't own its work, and
   their My Work would otherwise list cards they can no longer open. Done cards keep
