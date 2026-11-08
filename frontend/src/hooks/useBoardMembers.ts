@@ -3,17 +3,20 @@ import type { BoardMember } from "@/types/board";
 import { ApiError, apiClient, isHandledByApiClient, toastFailure } from "@/lib/apiClient";
 import { useBoardStore } from "@/store/useBoardStore";
 
-/** `null` on success; `""` when apiClient already told the user; else the reason to show. */
-export type AddMemberResult = string | null;
+/** `message` is null when apiClient already told the user (403). */
+export type AddMemberResult = { ok: true } | { ok: false; message: string | null };
 
 // Statuses AddBoardMember returns for these cases (member_handler.go).
 const ADD_MEMBER_ERRORS: Record<number, string> = {
+  400: "อีเมลไม่ถูกต้อง",
   404: "ไม่พบผู้ใช้ที่มีอีเมลนี้",
   409: "ผู้ใช้นี้เป็นสมาชิกบอร์ดอยู่แล้ว",
 };
 
-const clean = (rows: unknown): BoardMember[] =>
-  Array.isArray(rows) ? (rows as BoardMember[]).filter(Boolean) : [];
+export async function fetchBoardMembers(boardId: string): Promise<BoardMember[]> {
+  const rows = await apiClient<BoardMember[]>(`/boards/${boardId}/members`);
+  return Array.isArray(rows) ? rows.filter(Boolean) : [];
+}
 
 export function useBoardMembers(boardId: string) {
   const [members, setMembers] = useState<BoardMember[]>([]);
@@ -23,11 +26,17 @@ export function useBoardMembers(boardId: string) {
   const [loadFailed, setLoadFailed] = useState(false);
   const setBoardMembers = useBoardStore((s) => s.setBoardMembers);
 
+  // The store feeds role checks, assignee pickers and transfer targets.
+  const applyToBoth = (fn: (prev: BoardMember[]) => BoardMember[]) => {
+    setMembers(fn);
+    setBoardMembers(fn(useBoardStore.getState().boardMembers));
+  };
+
   useEffect(() => {
     let cancelled = false;
-    apiClient(`/boards/${boardId}/members`)
+    fetchBoardMembers(boardId)
       .then((rows) => {
-        if (!cancelled) setMembers(clean(rows));
+        if (!cancelled) setMembers(rows);
       })
       .catch(() => {
         if (!cancelled) setLoadFailed(true);
@@ -46,25 +55,25 @@ export function useBoardMembers(boardId: string) {
       await apiClient(`/boards/${boardId}/members`, { data: { email, role } });
     } catch (err) {
       setIsAdding(false);
-      if (isHandledByApiClient(err)) return "";
-      return (err instanceof ApiError && ADD_MEMBER_ERRORS[err.status]) || "เพิ่มสมาชิกไม่สำเร็จ";
+      if (isHandledByApiClient(err)) return { ok: false, message: null };
+      const known = err instanceof ApiError ? ADD_MEMBER_ERRORS[err.status] : undefined;
+      return { ok: false, message: known ?? "เพิ่มสมาชิกไม่สำเร็จ" };
     }
     try {
-      const fresh = clean(await apiClient(`/boards/${boardId}/members`));
-      setMembers(fresh);
-      setBoardMembers(fresh);
+      const fresh = await fetchBoardMembers(boardId);
+      applyToBoth(() => fresh);
     } catch (err) {
       toastFailure(err, "เพิ่มสมาชิกแล้ว แต่โหลดรายชื่อใหม่ไม่ได้ ลองรีเฟรชหน้า");
     }
     setIsAdding(false);
-    return null;
+    return { ok: true };
   };
 
   const removeMember = async (userId: string) => {
     setLoadingId(userId);
     try {
       await apiClient(`/boards/${boardId}/members/${userId}`, { method: "DELETE" });
-      setMembers((prev) => prev.filter((m) => m.user_id !== userId));
+      applyToBoth((prev) => prev.filter((m) => m.user_id !== userId));
     } catch (err) {
       toastFailure(err, "นำสมาชิกออกไม่สำเร็จ");
     } finally {
@@ -76,7 +85,7 @@ export function useBoardMembers(boardId: string) {
     setLoadingId(userId);
     try {
       await apiClient(`/boards/${boardId}/members/${userId}`, { method: "PATCH", data: { role } });
-      setMembers((prev) =>
+      applyToBoth((prev) =>
         prev.map((m) => (m.user_id === userId ? { ...m, role: role as BoardMember["role"] } : m))
       );
     } catch (err) {

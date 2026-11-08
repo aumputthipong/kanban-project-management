@@ -84,9 +84,37 @@ describe("transfer ownership", () => {
     );
   });
 
+  it("reloads the members after a 404 so the stale pick is gone", async () => {
+    server.use(
+      http.post(TRANSFER, () => HttpResponse.json({ error: "server text" }, { status: 404 })),
+      http.get(apiUrl("/boards/b1/members"), () =>
+        HttpResponse.json([me, makeMember({ id: "m2", user_id: "bob", full_name: "Bob" })])
+      )
+    );
+    const { user } = open();
+    await pickAndConfirm(user);
+    await waitFor(() => expect(toastMessages()).toEqual(["ไม่พบสมาชิกคนนี้ในบอร์ดแล้ว"]));
+    await waitFor(() => expect(screen.queryByRole("option", { name: "Ann" })).not.toBeInTheDocument());
+    expect(screen.getByLabelText("new owner")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Transfer" })).toBeDisabled();
+  });
+
+  it("shows the real owner after a 409", async () => {
+    server.use(
+      http.post(TRANSFER, () => HttpResponse.json({ error: "server text" }, { status: 409 })),
+      http.get(apiUrl("/boards/b1/members"), () =>
+        HttpResponse.json([{ ...me, role: "manager" }, { ...ann, role: "owner" }])
+      )
+    );
+    const { user } = open();
+    await pickAndConfirm(user);
+    await waitFor(() => expect(toastMessages()).toEqual(["สิทธิ์ Owner ถูกเปลี่ยนไปแล้ว"]));
+    await waitFor(() =>
+      expect(useBoardStore.getState().boardMembers.find((m) => m.user_id === "me")?.role).toBe("manager")
+    );
+  });
+
   it.each([
-    [404, "ไม่พบสมาชิกคนนี้ในบอร์ดแล้ว"],
-    [409, "สิทธิ์ Owner ถูกเปลี่ยนไปแล้ว ลองรีเฟรชหน้า"],
     [500, "โอนสิทธิ์ไม่สำเร็จ"],
   ])("explains a %i in Thai and changes nothing", async (status, message) => {
     server.use(http.post(TRANSFER, () => HttpResponse.json({ error: "server text" }, { status })));

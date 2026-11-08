@@ -6,14 +6,14 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ApiError, apiClient, toastFailure } from "@/lib/apiClient";
 import { useBoardStore } from "@/store/useBoardStore";
 import { useToastStore } from "@/store/useToastStore";
-import type { BoardMember } from "@/types/board";
+import { fetchBoardMembers } from "@/hooks/useBoardMembers";
 import { DangerRow } from "./DangerRow";
 import { SelectField } from "./SettingsParts";
 
 // Statuses TransferOwnership returns for these cases (member_handler.go).
 const TRANSFER_ERRORS: Record<number, string> = {
   404: "ไม่พบสมาชิกคนนี้ในบอร์ดแล้ว",
-  409: "สิทธิ์ Owner ถูกเปลี่ยนไปแล้ว ลองรีเฟรชหน้า",
+  409: "สิทธิ์ Owner ถูกเปลี่ยนไปแล้ว",
 };
 
 export function TransferOwnershipRow({ boardId }: { boardId: string }) {
@@ -27,6 +27,14 @@ export function TransferOwnershipRow({ boardId }: { boardId: string }) {
 
   const target = candidates.find((m) => m.user_id === targetId);
 
+  const reloadMembers = async () => {
+    try {
+      setBoardMembers(await fetchBoardMembers(boardId));
+    } catch (err) {
+      toastFailure(err, "โหลดรายชื่อสมาชิกใหม่ไม่ได้ ลองรีเฟรชหน้า");
+    }
+  };
+
   const transfer = async () => {
     if (!target) return;
     setTransferring(true);
@@ -34,19 +42,19 @@ export function TransferOwnershipRow({ boardId }: { boardId: string }) {
       await apiClient(`/boards/${boardId}/members/transfer-ownership`, {
         data: { user_id: target.user_id },
       });
+      showToast({ message: `โอนสิทธิ์ Owner ให้ ${target.full_name} แล้ว — ตอนนี้คุณเป็น Manager`, duration: 5000 });
+      await reloadMembers();
     } catch (err) {
-      toastFailure(err, (err instanceof ApiError && TRANSFER_ERRORS[err.status]) || "โอนสิทธิ์ไม่สำเร็จ");
+      const stale = err instanceof ApiError ? TRANSFER_ERRORS[err.status] : undefined;
+      toastFailure(err, stale ?? "โอนสิทธิ์ไม่สำเร็จ");
+      // The list we picked from is out of date; show the current one.
+      if (stale) {
+        setTargetId("");
+        await reloadMembers();
+      }
+    } finally {
       setTransferring(false);
-      return;
     }
-    showToast({ message: `โอนสิทธิ์ Owner ให้ ${target.full_name} แล้ว — ตอนนี้คุณเป็น Manager`, duration: 5000 });
-    try {
-      const fresh: BoardMember[] = await apiClient(`/boards/${boardId}/members`);
-      setBoardMembers(Array.isArray(fresh) ? fresh.filter(Boolean) : []);
-    } catch (err) {
-      toastFailure(err, "โหลดรายชื่อสมาชิกใหม่ไม่ได้ ลองรีเฟรชหน้า");
-    }
-    setTransferring(false);
   };
 
   return (

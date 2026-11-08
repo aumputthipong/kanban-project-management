@@ -49,6 +49,8 @@ describe("listing", () => {
     server.use(http.get(MEMBERS, () => HttpResponse.json({ error: "boom" }, { status: 500 })));
     renderWithUser(<BoardMembersSection boardId="b1" />);
     expect(await screen.findByText("โหลดรายชื่อสมาชิกไม่ได้ ลองรีเฟรชหน้า")).toBeInTheDocument();
+    expect(screen.queryByText("ไม่พบสมาชิกที่ตรงกับการค้นหา")).not.toBeInTheDocument();
+    expect(screen.getByText("–")).toBeInTheDocument();
   });
 });
 
@@ -88,6 +90,7 @@ describe("inviting by email", () => {
   });
 
   it.each([
+    [400, "อีเมลไม่ถูกต้อง"],
     [404, "ไม่พบผู้ใช้ที่มีอีเมลนี้"],
     [409, "ผู้ใช้นี้เป็นสมาชิกบอร์ดอยู่แล้ว"],
     [500, "เพิ่มสมาชิกไม่สำเร็จ"],
@@ -127,6 +130,7 @@ describe("changing a role", () => {
     await user.selectOptions(screen.getByLabelText("role for Ann"), "manager");
     await waitFor(() => expect(body).toEqual({ role: "manager" }));
     await waitFor(() => expect(screen.getByLabelText("role for Ann")).toHaveValue("manager"));
+    expect(useBoardStore.getState().boardMembers.find((m) => m.user_id === "ann")?.role).toBe("manager");
   });
 
   it("keeps the old role and toasts in Thai when it fails", async () => {
@@ -157,6 +161,7 @@ describe("removing a member", () => {
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "นำออก" }));
     await waitFor(() => expect(screen.queryByText("Ann")).not.toBeInTheDocument());
     expect(calls).toBe(1);
+    expect(useBoardStore.getState().boardMembers.map((m) => m.user_id)).not.toContain("ann");
   });
 
   it("keeps the member and toasts in Thai when it fails", async () => {
@@ -186,7 +191,9 @@ describe("removing a member", () => {
   });
 
   it("a manager cannot remove the owner or another manager", async () => {
-    await open("manager");
+    const realOwner = makeMember({ id: "m9", user_id: "olga", full_name: "Olga", role: "owner" });
+    await open("manager", [realOwner, { ...owner, role: "manager" }, ann, bob]);
+    expect(screen.queryByRole("button", { name: "นำ Olga ออกจาก Project" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "นำ Bob ออกจาก Project" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "นำ Ann ออกจาก Project" })).toBeInTheDocument();
   });

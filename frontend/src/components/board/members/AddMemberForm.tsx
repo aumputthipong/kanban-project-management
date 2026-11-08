@@ -19,9 +19,9 @@ export function AddMemberForm({ isAdding, onAdd }: AddMemberFormProps) {
   const handleSubmit = async () => {
     const trimmed = email.trim();
     if (!trimmed || isAdding) return;
-    const err = await onAdd(trimmed, selectedRole);
-    setError(err || null);
-    if (err === null) setEmail("");
+    const result = await onAdd(trimmed, selectedRole);
+    setError(result.ok ? null : result.message);
+    if (result.ok) setEmail("");
   };
 
   return (
