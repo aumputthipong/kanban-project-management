@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { BoardMembersSection } from "@/components/board/members/BoardMembersSection";
 import { useBoardStore } from "@/store/useBoardStore";
@@ -51,6 +51,36 @@ describe("listing", () => {
     expect(await screen.findByText("โหลดรายชื่อสมาชิกไม่ได้ ลองรีเฟรชหน้า")).toBeInTheDocument();
     expect(screen.queryByText("ไม่พบสมาชิกที่ตรงกับการค้นหา")).not.toBeInTheDocument();
     expect(screen.getByText("–")).toBeInTheDocument();
+  });
+});
+
+describe("staying in sync with the board", () => {
+  it("drops a member someone else removed, as soon as the board broadcast lands", async () => {
+    await open();
+    act(() => useBoardStore.getState().setBoardMembers([owner, bob]));
+    expect(screen.queryByText("Ann")).not.toBeInTheDocument();
+  });
+
+  it("treats a 404 on remove as already removed: the row goes, no error", async () => {
+    server.use(
+      http.delete(apiUrl("/boards/b1/members/ann"), () => HttpResponse.json({ error: "Not found" }, { status: 404 }))
+    );
+    const { user } = await open();
+    await user.click(screen.getByRole("button", { name: "นำ Ann ออกจาก Project" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "นำออก" }));
+    await waitFor(() => expect(screen.queryByText("Ann")).not.toBeInTheDocument());
+    expect(toastMessages()).toEqual([]);
+    expect(screen.queryByText("Not found")).not.toBeInTheDocument();
+  });
+
+  it("says so in Thai when changing the role of someone already gone", async () => {
+    server.use(
+      http.patch(apiUrl("/boards/b1/members/ann"), () => HttpResponse.json({ error: "Not found" }, { status: 404 }))
+    );
+    const { user } = await open();
+    await user.selectOptions(screen.getByLabelText("role for Ann"), "manager");
+    await waitFor(() => expect(toastMessages()).toEqual(["สมาชิกคนนี้ไม่ได้อยู่ใน Project แล้ว"]));
+    expect(screen.queryByText("Ann")).not.toBeInTheDocument();
   });
 });
 
