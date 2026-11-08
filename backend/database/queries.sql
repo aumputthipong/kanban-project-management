@@ -368,6 +368,14 @@ ORDER BY bm.joined_at ASC;
 DELETE FROM board_members
 WHERE board_id = $1 AND user_id = $2;
 
+-- name: UnassignOpenCardsOnBoard :exec
+-- Done cards keep their assignee as the record of who did the work.
+UPDATE cards
+SET assignee_id = NULL
+WHERE assignee_id = sqlc.arg(user_id)
+  AND is_done = FALSE
+  AND column_id IN (SELECT id FROM columns WHERE board_id = sqlc.arg(board_id));
+
 -- name: UpdateBoardMemberRole :one
 UPDATE board_members
 SET role = $3

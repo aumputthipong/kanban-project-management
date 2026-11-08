@@ -59,6 +59,7 @@ export function applyWsMessage({ type, payload }: WebSocketMessage): void {
     case WS_EVENT.BoardMembersUpdated: {
       const members: BoardMember[] = p.members;
       board.setBoardMembers(members);
+      board.unassignNonMembers(new Set(members.map((m) => m.user_id)));
       if (board.currentUserId && !members.some((m) => m.user_id === board.currentUserId)) {
         board.setRemovedFromBoard(true);
       }

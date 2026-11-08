@@ -63,10 +63,22 @@ func (s *BoardService) RemoveBoardMember(ctx context.Context, boardID, userID st
 	if role == "owner" {
 		return fmt.Errorf("cannot remove the board owner")
 	}
-	return s.queries.RemoveBoardMember(ctx, db.RemoveBoardMemberParams{
-		BoardID: boardID,
-		UserID:  userID,
-	})
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	qtx := s.queries.WithTx(tx)
+
+	if err := qtx.RemoveBoardMember(ctx, db.RemoveBoardMemberParams{BoardID: boardID, UserID: userID}); err != nil {
+		return fmt.Errorf("remove member: %w", err)
+	}
+	// Someone who can't open the board can't own its work; the cards go back to unassigned.
+	if err := qtx.UnassignOpenCardsOnBoard(ctx, db.UnassignOpenCardsOnBoardParams{UserID: &userID, BoardID: boardID}); err != nil {
+		return fmt.Errorf("unassign cards: %w", err)
+	}
+	return tx.Commit(ctx)
 }
 
 func (s *BoardService) UpdateMemberRole(ctx context.Context, boardID, userID string, role string) error {

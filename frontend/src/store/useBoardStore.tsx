@@ -27,6 +27,8 @@ interface BoardState {
   setCurrentUser: (userId: string) => void;
   setRemovedFromBoard: (removed: boolean) => void;
   setBoardMembers: (members: BoardMember[]) => void;
+  /** Mirrors the server: open cards of someone no longer on the board go unassigned. */
+  unassignNonMembers: (memberIds: Set<string>) => void;
   setBoardMeta: (meta: BoardMeta | null) => void;
   patchBoardMeta: (patch: Partial<BoardMeta>) => void;
   setLoading: (v: boolean) => void;
@@ -72,6 +74,24 @@ export const useBoardStore = create<BoardState>((set) => ({
   setCurrentUser: (userId) => set({ currentUserId: userId }),
   setRemovedFromBoard: (removed) => set({ removedFromBoard: removed }),
   setBoardMembers: (members) => set({ boardMembers: members }),
+  unassignNonMembers: (memberIds) =>
+    set((state) => {
+      const gone = (id: string | null) => id !== null && !memberIds.has(id);
+      let changed = false;
+      const columns = state.columns.map((col) => {
+        if (!col.cards.some((c) => !c.is_done && gone(c.assignee_id))) return col;
+        changed = true;
+        return {
+          ...col,
+          cards: col.cards.map((c) =>
+            !c.is_done && gone(c.assignee_id) ? { ...c, assignee_id: null, assignee_name: null } : c,
+          ),
+        };
+      });
+      const filterAssigneeId = gone(state.filterAssigneeId) ? null : state.filterAssigneeId;
+      if (!changed && filterAssigneeId === state.filterAssigneeId) return state;
+      return { columns: changed ? columns : state.columns, filterAssigneeId };
+    }),
   setBoardMeta: (meta) => set({ boardMeta: meta }),
   patchBoardMeta: (patch) =>
     set((state) =>
