@@ -90,6 +90,7 @@ func TestPromoteItem_AlreadyPromoted_Returns409(t *testing.T) {
 	httputil.MakeHandler(h.PromoteItem)(w, newPromoteRequest(t, validPlanningItemID, validUserID))
 
 	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.Contains(t, w.Body.String(), "ส่งเข้า Board ไปแล้ว")
 	assert.Empty(t, act.Calls)
 }
 
@@ -104,7 +105,7 @@ func TestPromoteItem_DroppedItem_Returns422(t *testing.T) {
 	httputil.MakeHandler(h.PromoteItem)(w, newPromoteRequest(t, validPlanningItemID, validUserID))
 
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
-	assert.Contains(t, w.Body.String(), "dropped")
+	assert.Contains(t, w.Body.String(), "ถูกพักไว้")
 	assert.Empty(t, act.Calls)
 }
 
@@ -119,7 +120,7 @@ func TestPromoteItem_NoTodoColumn_Returns422(t *testing.T) {
 	httputil.MakeHandler(h.PromoteItem)(w, newPromoteRequest(t, validPlanningItemID, validUserID))
 
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
-	assert.Contains(t, w.Body.String(), "TODO")
+	assert.Contains(t, w.Body.String(), "ยังไม่มีคอลัมน์ TODO")
 	assert.Empty(t, act.Calls)
 }
 

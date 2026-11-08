@@ -483,13 +483,13 @@ func (h *PlanningHandler) PromoteItem(w http.ResponseWriter, r *http.Request) er
 	item, card, err := h.planning.PromoteItem(r.Context(), itemID, userID)
 	if err != nil {
 		if errors.Is(err, service.ErrPlanningItemAlreadyPromoted) {
-			return httputil.NewAPIError(http.StatusConflict, "Item already promoted", err)
+			return httputil.NewAPIError(http.StatusConflict, "Note นี้ส่งเข้า Board ไปแล้ว", err)
 		}
 		if errors.Is(err, service.ErrPlanningItemDropped) {
-			return httputil.NewAPIError(http.StatusUnprocessableEntity, "Cannot promote a dropped item — un-drop it first", err)
+			return httputil.NewAPIError(http.StatusUnprocessableEntity, "Note นี้ถูกพักไว้ เอากลับมาก่อนแล้วค่อยส่งเข้า Board", err)
 		}
 		if errors.Is(err, service.ErrPlanningNoTodoColumn) {
-			return httputil.NewAPIError(http.StatusUnprocessableEntity, "Board has no TODO column — add one before promoting", err)
+			return httputil.NewAPIError(http.StatusUnprocessableEntity, "บอร์ดยังไม่มีคอลัมน์ TODO เพิ่มคอลัมน์ก่อนแล้วค่อยส่งเข้า Board", err)
 		}
 		if errors.Is(err, service.ErrPlanningNotFound) {
 			return httputil.NewAPIError(http.StatusNotFound, "Not found", err)

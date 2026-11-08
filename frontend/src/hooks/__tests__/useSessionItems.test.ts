@@ -309,4 +309,64 @@ describe("promote", () => {
     expect(tried).toEqual(["a"]);
     expect(toastMessages()).toEqual(["ไม่มีสิทธิ์"]);
   });
+
+  // Messages mirror planning_handler.go PromoteItem.
+  const ALREADY = "Note นี้ส่งเข้า Board ไปแล้ว";
+  const NO_TODO = "บอร์ดยังไม่มีคอลัมน์ TODO เพิ่มคอลัมน์ก่อนแล้วค่อยส่งเข้า Board";
+
+  it("promoteOne treats 409 as already on the board", async () => {
+    server.use(http.post(apiUrl("/planning/items/i1/promote"), fail(409, ALREADY)));
+    const { result } = await setup();
+    await act(() => result.current.promoteOne(item(result, "i1")!));
+    expect(item(result, "i1")?.status).toBe("promoted");
+    expect(toastMessages()).toEqual([ALREADY]);
+  });
+
+  it("promoteOne shows the server's reason on 422", async () => {
+    server.use(http.post(apiUrl("/planning/items/i1/promote"), fail(422, NO_TODO)));
+    const { result } = await setup();
+    await act(() => result.current.promoteOne(item(result, "i1")!));
+    expect(item(result, "i1")?.status).toBe("live");
+    expect(toastMessages()).toEqual([NO_TODO]);
+  });
+
+  it("promoteMany stops on a board-wide 422 with one clear message", async () => {
+    const tried: string[] = [];
+    server.use(
+      http.post(apiUrl("/planning/items/:id/promote"), ({ params }) => {
+        tried.push(String(params.id));
+        return HttpResponse.json({ error: NO_TODO }, { status: 422 });
+      })
+    );
+    const { result } = await setup([makeItem({ id: "a" }), makeItem({ id: "c" })]);
+    await act(() => result.current.promoteMany(["a", "c"]));
+    expect(tried).toEqual(["a"]);
+    expect(toastMessages()).toEqual([NO_TODO]);
+  });
+
+  it("promoteMany counts a 409 as on the board and marks it promoted", async () => {
+    server.use(
+      http.post(apiUrl("/planning/items/a/promote"), fail(409, ALREADY)),
+      http.post(apiUrl("/planning/items/c/promote"), () => promoted("c"))
+    );
+    const { result } = await setup([makeItem({ id: "a" }), makeItem({ id: "c" })]);
+    await act(() => result.current.promoteMany(["a", "c"]));
+    expect(item(result, "a")?.status).toBe("promoted");
+    expect(toastMessages()).toEqual(["ส่งเข้า Board แล้ว 2 รายการ"]);
+  });
+
+  it("promoteMany leaves out dropped Notes, which the server would refuse", async () => {
+    const tried: string[] = [];
+    server.use(
+      http.post(apiUrl("/planning/items/:id/promote"), ({ params }) => {
+        tried.push(String(params.id));
+        return promoted(String(params.id));
+      })
+    );
+    const { result } = await setup([makeItem({ id: "a" }), makeItem({ id: "d", status: "dropped" })]);
+    await act(() => result.current.promoteMany(["a", "d"]));
+    expect(tried).toEqual(["a"]);
+    expect(toastMessages()).toEqual(["ส่งเข้า Board แล้ว 1 รายการ"]);
+  });
 });
+

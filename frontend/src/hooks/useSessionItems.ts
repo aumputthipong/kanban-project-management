@@ -178,47 +178,59 @@ export function useSessionItems(
     [],
   );
 
-  const promoteOne = useCallback(
-    async (item: PlanningItem) => {
+  // 409 = already on the board; 422 = the server's actionable reason (planning_handler.go).
+  const promoteOnce = useCallback(
+    async (item: PlanningItem): Promise<"sent" | "already" | "stop" | "failed"> => {
       try {
         const res = await planningApi.promoteItem(item.id);
-        setItems((prev) =>
-          prev.map((cur) => (cur.id === item.id ? res.item : cur)),
-        );
-        showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
+        setItems((prev) => prev.map((cur) => (cur.id === item.id ? res.item : cur)));
+        return "sent";
       } catch (err) {
+        if (err instanceof ApiError && err.status === 409) {
+          setItems((prev) =>
+            prev.map((cur) => (cur.id === item.id ? { ...cur, status: "promoted" } : cur)),
+          );
+          return "already";
+        }
+        if (err instanceof ApiError && err.status === 422) {
+          showToast({ message: err.message, duration: 5000 });
+          return "stop";
+        }
         toastFailure(err, `ส่งเข้า Board ไม่ได้: ${item.title}`);
+        return isHandledByApiClient(err) ? "stop" : "failed";
       }
     },
     [showToast],
+  );
+
+  const promoteOne = useCallback(
+    async (item: PlanningItem) => {
+      const outcome = await promoteOnce(item);
+      if (outcome === "sent") showToast({ message: "ส่งเข้า Board แล้ว", duration: 2500 });
+      if (outcome === "already") showToast({ message: "Note นี้ส่งเข้า Board ไปแล้ว", duration: 2500 });
+    },
+    [promoteOnce, showToast],
   );
 
   const promoteMany = useCallback(
     async (ids: string[]) => {
       const idSet = new Set(ids);
       const targets = items.filter(
-        (it) => idSet.has(it.id) && it.status !== "promoted",
+        (it) => idSet.has(it.id) && it.status !== "promoted" && it.status !== "dropped",
       );
       if (targets.length === 0) return;
       // Sequential to keep board card positions stable.
-      let sent = 0;
+      let onBoard = 0;
       for (const it of targets) {
-        try {
-          const res = await planningApi.promoteItem(it.id);
-          setItems((prev) =>
-            prev.map((cur) => (cur.id === it.id ? res.item : cur)),
-          );
-          sent++;
-        } catch (err) {
-          toastFailure(err, `ส่งเข้า Board ไม่ได้: ${it.title}`);
-          if (isHandledByApiClient(err)) break;
-        }
+        const outcome = await promoteOnce(it);
+        if (outcome === "sent" || outcome === "already") onBoard++;
+        if (outcome === "stop") break;
       }
-      if (sent > 0) {
-        showToast({ message: `ส่งเข้า Board แล้ว ${sent} รายการ`, duration: 3000 });
+      if (onBoard > 0) {
+        showToast({ message: `ส่งเข้า Board แล้ว ${onBoard} รายการ`, duration: 3000 });
       }
     },
-    [items, showToast],
+    [items, promoteOnce, showToast],
   );
 
   return {

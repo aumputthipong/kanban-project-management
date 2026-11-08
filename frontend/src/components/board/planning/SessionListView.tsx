@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, FileText, HelpCircle, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useToastStore } from "@/store/useToastStore";
 import { planningApi } from "@/lib/planningApi";
+import { toastFailure } from "@/lib/apiClient";
 import type { PlanningSessionSummary } from "@/types/planning";
 import { SessionRow } from "./SessionRow";
 
@@ -17,7 +17,7 @@ export function SessionListView({ boardId }: Props) {
   const router = useRouter();
   const [sessions, setSessions] = useState<PlanningSessionSummary[] | null>(null);
   const [creating, setCreating] = useState(false);
-  const showToast = useToastStore((s) => s.show);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,7 +27,9 @@ export function SessionListView({ boardId }: Props) {
         if (!cancelled) setSessions(rows);
       })
       .catch(() => {
-        if (!cancelled) setSessions([]);
+        if (cancelled) return;
+        setLoadFailed(true);
+        setSessions([]);
       });
     return () => {
       cancelled = true;
@@ -42,11 +44,11 @@ export function SessionListView({ boardId }: Props) {
         title: defaultSessionTitle(),
       });
       router.push(`/board/${boardId}/planning/${sess.id}`);
-    } catch {
-      showToast({ message: "สร้างบันทึกใหม่ไม่ได้", duration: 4000 });
+    } catch (err) {
+      toastFailure(err, "สร้างบันทึกใหม่ไม่ได้");
       setCreating(false);
     }
-  }, [boardId, creating, router, showToast]);
+  }, [boardId, creating, router]);
 
   const handleRename = async (id: string, title: string) => {
     const prevTitle = sessions?.find((s) => s.id === id)?.title ?? "";
@@ -56,8 +58,8 @@ export function SessionListView({ boardId }: Props) {
     );
     try {
       await planningApi.updateSession(id, { title });
-    } catch {
-      showToast({ message: "เปลี่ยนชื่อบันทึกไม่สำเร็จ", duration: 4000 });
+    } catch (err) {
+      toastFailure(err, "เปลี่ยนชื่อบันทึกไม่สำเร็จ");
       setSessions((cur) =>
         cur ? cur.map((s) => (s.id === id ? { ...s, title: prevTitle } : s)) : cur,
       );
@@ -98,7 +100,11 @@ export function SessionListView({ boardId }: Props) {
         </button>
       </div>
 
-      {sessions.length === 0 ? (
+      {loadFailed ? (
+        <p className="rounded border border-dashed border-slate-300 bg-slate-50/40 p-6 text-center text-sm text-slate-400">
+          โหลดรายการบันทึกไม่ได้ ลองรีเฟรชหน้า
+        </p>
+      ) : sessions.length === 0 ? (
         <EmptyState onCreate={createSession} creating={creating} />
       ) : (
         <>
