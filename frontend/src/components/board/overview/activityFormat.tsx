@@ -241,7 +241,7 @@ export function eventBadge(
   ) {
     return { Icon: EyeOff, bg: "bg-slate-500" };
   }
-  if (eventType.endsWith(".deleted")) {
+  if (/[._]deleted$/.test(eventType)) {
     return { Icon: Trash2, bg: "bg-rose-500" };
   }
   if (

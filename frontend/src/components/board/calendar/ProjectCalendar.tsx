@@ -24,6 +24,7 @@ import { CalendarFilters } from "./CalendarFilters";
 import { TaskPill } from "./TaskPill";
 import { CalendarTaskModal } from "./CalendarTaskModal";
 import { DayDetailModal } from "./DayDetailModal";
+import { parseDueDate } from "@/utils/date_helper";
 import { classifyPillState, type PillState } from "./pillState";
 
 const CardDetailModal = dynamic(
@@ -87,7 +88,7 @@ export function ProjectCalendar({ boardId }: Props) {
     const map = new Map<string, Card[]>();
     for (const card of allDueCards) {
       if (!card.due_date) continue;
-      const key = format(new Date(card.due_date), "yyyy-MM-dd");
+      const key = format(parseDueDate(card.due_date), "yyyy-MM-dd");
       const bucket = map.get(key) ?? [];
       bucket.push(card);
       map.set(key, bucket);

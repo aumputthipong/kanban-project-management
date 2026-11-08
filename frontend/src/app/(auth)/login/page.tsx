@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/constants";
 import { apiClient } from "@/lib/apiClient";
+import { loginErrorMessage, safeRedirectPath } from "@/lib/authForm";
 import { ApiWarmup } from "@/components/demo/ApiWarmup";
 import { TryDemoButton } from "@/components/demo/TryDemoButton";
 
@@ -56,16 +57,11 @@ function LoginForm() {
         data: { email, password },
       });
 
-      // Relative paths only — prevents an open redirect.
-      const redirect = searchParams.get("redirect");
-      const dest =
-        redirect && redirect.startsWith("/") && !redirect.startsWith("//")
-          ? redirect
-          : "/dashboard";
+      const dest = safeRedirectPath(searchParams.get("redirect"));
       router.push(dest);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      setError(loginErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

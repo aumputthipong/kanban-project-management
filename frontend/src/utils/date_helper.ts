@@ -117,6 +117,12 @@ export function formatThaiShortDate(dateStr: string): string {
   });
 }
 
+/** Date-only strings ("2026-12-24") are local calendar days; `new Date` would read them as UTC. */
+export const parseDueDate = (s: string): Date => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(s);
+};
+
 /** Local YYYY-MM-DD for today plus `offsetDays`. */
 export function isoDateFromToday(offsetDays: number): string {
   const d = new Date();

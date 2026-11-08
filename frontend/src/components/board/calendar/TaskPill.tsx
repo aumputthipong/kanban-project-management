@@ -4,6 +4,7 @@ import { Check, Circle, AlertCircle, Loader2 } from "lucide-react";
 import type { Card } from "@/types/board";
 import { getAvatarColor } from "@/utils/avatar";
 import { getColumnColorHex } from "@/components/board/task-board/ColumnOptionsModal";
+import { parseDueDate } from "@/utils/date_helper";
 import { classifyPillState, type PillState } from "./pillState";
 
 interface TaskPillProps {
@@ -53,7 +54,7 @@ export function TaskPill({ card, onSelect, inPopover = false }: TaskPillProps) {
 
   const daysFromToday = card.due_date
     ? Math.round(
-        (new Date(card.due_date).setHours(0, 0, 0, 0) -
+        (parseDueDate(card.due_date).setHours(0, 0, 0, 0) -
           new Date().setHours(0, 0, 0, 0)) /
           86400000,
       )
