@@ -22,7 +22,7 @@ export function BoardMembersSection({ boardId }: BoardMembersSectionProps) {
     isLoading,
     isAdding,
     loadingId,
-    error,
+    loadFailed,
     addMember,
     removeMember,
     changeRole,
@@ -117,7 +117,9 @@ export function BoardMembersSection({ boardId }: BoardMembersSectionProps) {
         </div>
       </div>
 
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {loadFailed && (
+        <p className="mb-3 text-sm text-red-600">โหลดรายชื่อสมาชิกไม่ได้ ลองรีเฟรชหน้า</p>
+      )}
 
       {isLoading ? (
         <MemberGroupsSkeleton />

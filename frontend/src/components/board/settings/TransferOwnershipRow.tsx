@@ -3,12 +3,18 @@
 import { useState } from "react";
 import { Crown, Loader2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { apiClient, isHandledByApiClient } from "@/lib/apiClient";
+import { ApiError, apiClient, toastFailure } from "@/lib/apiClient";
 import { useBoardStore } from "@/store/useBoardStore";
 import { useToastStore } from "@/store/useToastStore";
 import type { BoardMember } from "@/types/board";
 import { DangerRow } from "./DangerRow";
 import { SelectField } from "./SettingsParts";
+
+// Statuses TransferOwnership returns for these cases (member_handler.go).
+const TRANSFER_ERRORS: Record<number, string> = {
+  404: "ไม่พบสมาชิกคนนี้ในบอร์ดแล้ว",
+  409: "สิทธิ์ Owner ถูกเปลี่ยนไปแล้ว ลองรีเฟรชหน้า",
+};
 
 export function TransferOwnershipRow({ boardId }: { boardId: string }) {
   const boardMembers = useBoardStore((s) => s.boardMembers);
@@ -32,8 +38,7 @@ export function TransferOwnershipRow({ boardId }: { boardId: string }) {
       setBoardMembers(Array.isArray(fresh) ? fresh.filter(Boolean) : []);
       showToast({ message: `โอนสิทธิ์ Owner ให้ ${target.full_name} แล้ว — ตอนนี้คุณเป็น Manager`, duration: 5000 });
     } catch (err) {
-      if (isHandledByApiClient(err)) return;
-      showToast({ message: err instanceof Error ? err.message : "โอนสิทธิ์ไม่สำเร็จ", duration: 4000 });
+      toastFailure(err, (err instanceof ApiError && TRANSFER_ERRORS[err.status]) || "โอนสิทธิ์ไม่สำเร็จ");
     } finally {
       setTransferring(false);
     }
