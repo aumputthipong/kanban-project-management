@@ -128,6 +128,13 @@ the behaviour.
   already see the card, so there is nothing left to hide.
 - Removing a member evicts their sockets: membership is only checked at the
   WS handshake.
+- Removing a member (or leaving) unassigns their **open** cards on that board in
+  the same transaction: someone who can't open the board can't own its work, and
+  their My Work would otherwise list cards they can no longer open. Done cards keep
+  the assignee as the record of who did the work. No per-card activity row (it
+  would flood the feed); `member.removed` / `member.left` already says what
+  happened. Other clients mirror it from the `BOARD_MEMBERS_UPDATED` broadcast
+  (`unassignNonMembers`), so no new WS event.
 
 ### Planning
 

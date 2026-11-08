@@ -14,9 +14,11 @@ import (
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/db"
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/service"
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/testutil"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type memberFixture struct {
+	pool    *pgxpool.Pool
 	queries *db.Queries
 	svc     *service.BoardService
 	seed    *testutil.SeedHelper
@@ -32,6 +34,7 @@ func newMemberFixture(t *testing.T) *memberFixture {
 	seed := testutil.NewSeed(t, pool)
 	ownerID := seed.User(ctx)
 	return &memberFixture{
+		pool:    pool,
 		queries: queries,
 		svc:     service.NewBoardService(pool, queries),
 		seed:    seed,
@@ -127,6 +130,53 @@ func TestRemoveBoardMember_RegularMember_Success(t *testing.T) {
 
 	_, err := f.queries.GetBoardMemberRole(ctx, db.GetBoardMemberRoleParams{BoardID: f.boardID, UserID: member})
 	assert.Error(t, err, "the member row must actually be gone")
+}
+
+// cardOn seeds a card on boardID assigned to assignee.
+func (f *memberFixture) cardOn(ctx context.Context, t *testing.T, boardID, assignee string, done bool) string {
+	t.Helper()
+	cardID := f.seed.Card(ctx, f.seed.Column(ctx, boardID, "TODO", 65536))
+	_, err := f.pool.Exec(ctx, `UPDATE cards SET assignee_id = $1, is_done = $2 WHERE id = $3`, assignee, done, cardID)
+	require.NoError(t, err)
+	return cardID
+}
+
+func (f *memberFixture) assigneeOf(ctx context.Context, t *testing.T, cardID string) *string {
+	t.Helper()
+	var assignee *string
+	require.NoError(t, f.pool.QueryRow(ctx, `SELECT assignee_id::text FROM cards WHERE id = $1`, cardID).Scan(&assignee))
+	return assignee
+}
+
+func TestRemoveBoardMember_UnassignsTheirOpenCardsOnThisBoardOnly(t *testing.T) {
+	ctx := context.Background()
+	f := newMemberFixture(t)
+	member := f.addPlainMember(ctx, t)
+
+	otherBoard := f.seed.Board(ctx, f.ownerID)
+	_, err := f.queries.AddBoardMember(ctx, db.AddBoardMemberParams{BoardID: otherBoard, UserID: member, Role: "member"})
+	require.NoError(t, err)
+
+	open := f.cardOn(ctx, t, f.boardID, member, false)
+	done := f.cardOn(ctx, t, f.boardID, member, true)
+	ownersCard := f.cardOn(ctx, t, f.boardID, f.ownerID, false)
+	elsewhere := f.cardOn(ctx, t, otherBoard, member, false)
+
+	require.NoError(t, f.svc.RemoveBoardMember(ctx, f.boardID, member))
+
+	assert.Nil(t, f.assigneeOf(ctx, t, open), "an open card must not stay with someone who left the board")
+	assert.Equal(t, &member, f.assigneeOf(ctx, t, done), "done cards keep who did the work")
+	assert.Equal(t, &f.ownerID, f.assigneeOf(ctx, t, ownersCard), "other people's cards are untouched")
+	assert.Equal(t, &member, f.assigneeOf(ctx, t, elsewhere), "cards on boards they still belong to are untouched")
+}
+
+func TestRemoveBoardMember_Owner_LeavesTheirCardsAlone(t *testing.T) {
+	ctx := context.Background()
+	f := newMemberFixture(t)
+	card := f.cardOn(ctx, t, f.boardID, f.ownerID, false)
+
+	require.Error(t, f.svc.RemoveBoardMember(ctx, f.boardID, f.ownerID))
+	assert.Equal(t, &f.ownerID, f.assigneeOf(ctx, t, card))
 }
 
 func TestUpdateMemberRole_Owner_Rejected(t *testing.T) {

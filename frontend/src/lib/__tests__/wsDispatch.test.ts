@@ -248,3 +248,51 @@ describe("applyWsMessage unknown type", () => {
     expect(useBoardStore.getState().columns).toBe(before);
   });
 });
+
+describe("applyWsMessage BOARD_MEMBERS_UPDATED unassigns removed members", () => {
+  const cardsById = () =>
+    Object.fromEntries(useBoardStore.getState().columns[0].cards.map((c) => [c.id, c]));
+
+  beforeEach(() => {
+    useBoardStore.setState({
+      currentUserId: "user-bob",
+      columns: [
+        {
+          id: "col-1",
+          title: "To Do",
+          position: 65536,
+          category: "TODO",
+          color: null,
+          cards: [
+            makeCard({ id: "open", assignee_id: "user-alice", assignee_name: "Alice" }),
+            makeCard({ id: "done", assignee_id: "user-alice", assignee_name: "Alice", is_done: true }),
+            makeCard({ id: "bobs", assignee_id: "user-bob", assignee_name: "Bob" }),
+            makeCard({ id: "none", assignee_id: null, assignee_name: null }),
+          ],
+        },
+      ],
+    });
+  });
+
+  it("clears open cards of someone no longer listed, keeps done cards and everyone else's", () => {
+    applyWsMessage({ type: WS_EVENT.BoardMembersUpdated, payload: { members: [BOB] } });
+
+    const cards = cardsById();
+    expect(cards.open).toMatchObject({ assignee_id: null, assignee_name: null });
+    expect(cards.done).toMatchObject({ assignee_id: "user-alice", assignee_name: "Alice" });
+    expect(cards.bobs.assignee_id).toBe("user-bob");
+    expect(cards.none.assignee_id).toBeNull();
+  });
+
+  it("drops an assignee filter that points at the removed member", () => {
+    useBoardStore.setState({ filterAssigneeId: "user-alice" });
+    applyWsMessage({ type: WS_EVENT.BoardMembersUpdated, payload: { members: [BOB] } });
+    expect(useBoardStore.getState().filterAssigneeId).toBeNull();
+  });
+
+  it("is a no-op when nobody left (same columns object)", () => {
+    const before = useBoardStore.getState().columns;
+    applyWsMessage({ type: WS_EVENT.BoardMembersUpdated, payload: { members: [ALICE, BOB] } });
+    expect(useBoardStore.getState().columns).toBe(before);
+  });
+});

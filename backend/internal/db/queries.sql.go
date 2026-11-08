@@ -2635,6 +2635,25 @@ func (q *Queries) TouchBoardMemberIfStale(ctx context.Context, arg TouchBoardMem
 	return err
 }
 
+const unassignOpenCardsOnBoard = `-- name: UnassignOpenCardsOnBoard :exec
+UPDATE cards
+SET assignee_id = NULL
+WHERE assignee_id = $1
+  AND is_done = FALSE
+  AND column_id IN (SELECT id FROM columns WHERE board_id = $2)
+`
+
+type UnassignOpenCardsOnBoardParams struct {
+	UserID  *string
+	BoardID string
+}
+
+// Done cards keep their assignee as the record of who did the work.
+func (q *Queries) UnassignOpenCardsOnBoard(ctx context.Context, arg UnassignOpenCardsOnBoardParams) error {
+	_, err := q.db.Exec(ctx, unassignOpenCardsOnBoard, arg.UserID, arg.BoardID)
+	return err
+}
+
 const updateBoard = `-- name: UpdateBoard :one
 UPDATE boards
 SET title = $2,
