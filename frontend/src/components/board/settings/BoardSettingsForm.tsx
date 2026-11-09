@@ -23,15 +23,20 @@ export function BoardSettingsForm({ boardId, board }: BoardSettingsFormProps) {
   const canManage = useCanManageBoard();
   const canDelete = useCanDeleteBoard();
 
-  // Also update the persistent BoardHeader so it reflects edits live.
-  const saveField = (field: string, value: string | number) => {
-    if (
-      (field === "title" || field === "icon" || field === "color") &&
-      typeof value === "string"
-    ) {
-      patchBoardMeta({ [field]: value });
+  // Also update the persistent BoardHeader so it reflects edits live; undone if the save fails.
+  const saveField = async (field: string, value: string | number) => {
+    const isMeta = (field === "title" || field === "icon" || field === "color") && typeof value === "string";
+    const before = useBoardStore.getState().boardMeta;
+    if (isMeta) patchBoardMeta({ [field]: value });
+    try {
+      await updateField(field, value);
+    } catch (err) {
+      const key = field as keyof NonNullable<typeof before>;
+      // Only undo our own write; a newer save of the same field keeps its value.
+      const stillOurs = useBoardStore.getState().boardMeta?.[key] === value;
+      if (isMeta && before && stillOurs) patchBoardMeta({ [key]: before[key] });
+      throw err;
     }
-    return updateField(field, value);
   };
 
   const [active, setActive] = useState("sec-general");

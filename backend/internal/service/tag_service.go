@@ -7,6 +7,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/db"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,6 +18,7 @@ const maxTagNameLen = 50
 var (
 	ErrTagNameEmpty   = errors.New("tag name cannot be empty")
 	ErrTagNameTooLong = errors.New("tag name too long (max 50 chars)")
+	ErrTagNameTaken   = errors.New("a tag with this name already exists on this board")
 )
 
 type TagService struct {
@@ -40,11 +43,16 @@ func (s *TagService) CreateTag(ctx context.Context, boardID, name, color string)
 	if utf8.RuneCountInString(name) > maxTagNameLen {
 		return db.Tag{}, ErrTagNameTooLong
 	}
-	return s.queries.CreateTag(ctx, db.CreateTagParams{
+	tag, err := s.queries.CreateTag(ctx, db.CreateTagParams{
 		BoardID: boardID,
 		Name:    name,
 		Color:   color,
 	})
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		return db.Tag{}, ErrTagNameTaken
+	}
+	return tag, err
 }
 
 func (s *TagService) DeleteTag(ctx context.Context, boardID, tagID string) error {

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Tag as TagIcon } from "lucide-react";
 import { useBoardStore } from "@/store/useBoardStore";
-import { API_URL } from "@/lib/constants";
+import { apiClient } from "@/lib/apiClient";
 import type { Tag } from "@/types/board";
 import { getColumnColorHex } from "./ColumnOptionsModal";
 
@@ -21,9 +21,8 @@ export function TagFilterDropdown({ boardId }: TagFilterDropdownProps) {
 
   useEffect(() => {
     if (!boardId) return;
-    fetch(`${API_URL}/boards/${boardId}/tags`, { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: Tag[]) => setTags(Array.isArray(data) ? data : []))
+    apiClient<Tag[]>(`/boards/${boardId}/tags`)
+      .then((data) => setTags(Array.isArray(data) ? data : []))
       .catch(() => {
         // Non-critical: on failure the dropdown shows no tags.
       });

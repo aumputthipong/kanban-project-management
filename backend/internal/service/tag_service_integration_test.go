@@ -44,6 +44,16 @@ func TestCreateTag_Success(t *testing.T) {
 	assert.Equal(t, "bug", tag.Name)
 }
 
+func TestCreateTag_SameNameTwice_ErrTagNameTaken(t *testing.T) {
+	ctx := context.Background()
+	f := newTagFixture(t)
+
+	_, err := f.svc.CreateTag(ctx, f.boardID, "bug", "red")
+	require.NoError(t, err)
+	_, err = f.svc.CreateTag(ctx, f.boardID, " bug ", "blue")
+	assert.ErrorIs(t, err, service.ErrTagNameTaken)
+}
+
 func TestCreateTag_Whitespace_ErrTagNameEmpty(t *testing.T) {
 	ctx := context.Background()
 	f := newTagFixture(t)

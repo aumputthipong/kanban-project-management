@@ -9,6 +9,7 @@ import {
   DEFAULT_BOARD_ICON,
   type BoardIconKey,
 } from "@/lib/boardAppearance";
+import { isHandledByApiClient, toastFailure } from "@/lib/apiClient";
 
 type BoardField = "title" | "description" | "color" | "icon";
 
@@ -61,8 +62,8 @@ export function GeneralSection({
       await onSaveField("title", clean);
       setSavedName(clean);
       onSaved();
-    } catch {
-      setNameError("บันทึกไม่สำเร็จ ลองอีกครั้ง");
+    } catch (err) {
+      if (!isHandledByApiClient(err)) setNameError("บันทึกไม่สำเร็จ ลองอีกครั้ง");
     } finally {
       setSavingName(false);
     }
@@ -74,6 +75,8 @@ export function GeneralSection({
       await onSaveField("description", desc);
       setSavedDesc(desc);
       onSaved();
+    } catch (err) {
+      toastFailure(err, "บันทึกคำอธิบายไม่สำเร็จ ลองอีกครั้ง");
     } finally {
       setSavingDesc(false);
     }
@@ -86,8 +89,9 @@ export function GeneralSection({
     try {
       await onSaveField("color", next);
       onSaved();
-    } catch {
+    } catch (err) {
       setColor(prev);
+      toastFailure(err, "เปลี่ยนสีไม่สำเร็จ");
     } finally {
       setSavingAppearance(null);
     }
@@ -100,8 +104,9 @@ export function GeneralSection({
     try {
       await onSaveField("icon", next);
       onSaved();
-    } catch {
+    } catch (err) {
       setIcon(prev);
+      toastFailure(err, "เปลี่ยนไอคอนไม่สำเร็จ");
     } finally {
       setSavingAppearance(null);
     }

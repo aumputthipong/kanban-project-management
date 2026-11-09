@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { CardDetailModal } from "@/components/board/card-modal/CardDetailModal";
 import { useCardActions } from "@/hooks/useCardActions";
 import { useBoardStore } from "@/store/useBoardStore";
 import { server, apiUrl } from "@/test/server";
 import { renderWithUser } from "@/test/render";
-import { makeCard, makeColumn } from "@/test/factories";
+import { makeCard, makeColumn, makeMember } from "@/test/factories";
 import { findCard, toastMessages } from "@/test/board";
 
 function Harness() {
@@ -35,7 +35,6 @@ beforeEach(() => {
   });
   server.use(
     http.get(apiUrl("/cards/c1/subtasks"), () => HttpResponse.json([])),
-    http.get(apiUrl("/boards/b1/members"), () => HttpResponse.json([])),
     http.get(apiUrl("/boards/b1/tags"), () => HttpResponse.json([])),
     http.get(apiUrl("/cards/c1/source"), () => HttpResponse.json(null))
   );
@@ -81,5 +80,25 @@ describe("CardDetailModal save failure", () => {
     const input = await renameTo(user, "New");
     await waitFor(() => expect(findCard("c1")?.title).toBe("New"));
     expect(input).toHaveValue("New");
+  });
+});
+
+describe("CardDetailModal assignee picker", () => {
+  it("lists the board store's members and drops one removed while the modal is open", async () => {
+    useBoardStore.setState({
+      currentUserId: "me",
+      boardMembers: [
+        makeMember({ user_id: "me", full_name: "Me" }),
+        makeMember({ id: "m2", user_id: "bob", full_name: "Bob" }),
+      ],
+    });
+    const { user } = renderWithUser(<Harness />);
+    await user.click(screen.getByRole("button", { name: /Unassigned/ }));
+    expect(await screen.findByText("Bob")).toBeInTheDocument();
+
+    // What BOARD_MEMBERS_UPDATED does when Bob is removed elsewhere.
+    act(() => useBoardStore.getState().setBoardMembers([makeMember({ user_id: "me", full_name: "Me" })]));
+
+    await waitFor(() => expect(screen.queryByText("Bob")).not.toBeInTheDocument());
   });
 });

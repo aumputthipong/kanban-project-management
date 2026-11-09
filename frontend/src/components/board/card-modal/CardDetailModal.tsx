@@ -66,7 +66,7 @@ export function CardDetailModal({
     handleChange,
     setTags,
     commitField,
-  } = useCardForm(card, boardId, isOpen, onCommit);
+  } = useCardForm(card, onCommit);
 
   const { fetchSubtasks } = useBoardActions(boardId);
   const canDelete = useCanDeleteCard(card);
