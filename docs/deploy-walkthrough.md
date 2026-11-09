@@ -99,16 +99,16 @@ That's all for Neon. Migrations run automatically when the backend first boots (
    - Name: `turtask-web`.
    - **Authorized redirect URIs** → Add:
      ```
-     https://turtask-api.onrender.com/api/auth/google/callback
+     https://turtask.vercel.app/api/auth/google/callback
      ```
-     (your `<BACKEND_URL>` + `/api/auth/google/callback` — exact, no trailing slash)
+     (your **`<FRONTEND_URL>`** from step 4 + `/api/auth/google/callback` — exact, no trailing slash. The sign-in link goes through the Vercel `/api` rewrite, so Google must return to the frontend origin where the `oauth_state` cookie was set. Don't know the Vercel URL yet? Finish step 4, then come back and fill this in.)
    - Create → copy the **Client ID** and **Client secret**.
 4. Back in **Render** → your service → **Environment** → fill:
    | Key | Value |
    |---|---|
    | `GOOGLE_CLIENT_ID` | the client id |
    | `GOOGLE_CLIENT_SECRET` | the client secret |
-   | `GOOGLE_REDIRECT_URL` | `https://turtask-api.onrender.com/api/auth/google/callback` |
+   | `GOOGLE_REDIRECT_URL` | `https://turtask.vercel.app/api/auth/google/callback` (same `<FRONTEND_URL>` URI as above) |
    Save (Render will redeploy).
 
 ---
