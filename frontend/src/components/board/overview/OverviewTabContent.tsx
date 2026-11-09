@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, AlarmClock, Zap, AlertTriangle, Users } from "lu
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { Card } from "@/types/board";
+import { parseDueDate } from "@/utils/date_helper";
 
 // recharts is ~400KB; keep it out of the main bundle.
 const PieChartWidget = dynamic(() => import("./PieChartWidget"), {
@@ -66,7 +67,7 @@ export function OverviewTabContent({
     today.setHours(0, 0, 0, 0);
     return allCards.filter((c) => {
       if (c.is_done || !c.due_date) return false;
-      const d = new Date(c.due_date);
+      const d = parseDueDate(c.due_date);
       d.setHours(0, 0, 0, 0);
       return d.getTime() < today.getTime();
     }).length;

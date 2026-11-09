@@ -1,7 +1,7 @@
 "use client";
 
 import type { Card } from "@/types/board";
-import { daysOverdue } from "@/utils/date_helper";
+import { daysOverdue, parseDueDate } from "@/utils/date_helper";
 
 interface HeldCardRowProps {
   card: Card;
@@ -14,7 +14,7 @@ function dueLabel(card: Card): { text: string; overdue: boolean } | null {
   const days = daysOverdue(card.due_date);
   if (days > 0) return { text: `เลย ${days} วัน`, overdue: true };
   return {
-    text: new Date(card.due_date).toLocaleDateString("th-TH", {
+    text: parseDueDate(card.due_date).toLocaleDateString("th-TH", {
       day: "numeric",
       month: "short",
     }),

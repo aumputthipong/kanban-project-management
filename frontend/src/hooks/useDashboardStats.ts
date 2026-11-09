@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useBoardStore } from "@/store/useBoardStore";
 import type { Card } from "@/types/board";
+import { parseDueDate } from "@/utils/date_helper";
 
 interface ExtendedCard extends Card {
   updated_at?: string;
@@ -73,7 +74,7 @@ export function useDashboardStats() {
       }
 
       if (card.due_date && !isDone) {
-        const dueDate = new Date(card.due_date);
+        const dueDate = parseDueDate(card.due_date);
         dueDate.setHours(0, 0, 0, 0);
 
         if (dueDate < today) {
