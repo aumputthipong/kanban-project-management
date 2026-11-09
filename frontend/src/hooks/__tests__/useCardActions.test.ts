@@ -8,6 +8,8 @@ import { makeCard, makeColumn, makeMember } from "@/test/factories";
 import { findCard, columnOf, toastMessages } from "@/test/board";
 import type { CardUpdateForm } from "@/types/board";
 
+const notMember = () =>
+  HttpResponse.json({ error: "server text", code: "assignee_not_member" }, { status: 422 });
 const fail = (status: number) => () => HttpResponse.json({ error: "nope" }, { status });
 
 beforeEach(() => {
@@ -86,6 +88,14 @@ describe("handleAddCard", () => {
     await waitFor(() => expect(toastMessages()).toEqual(["สร้างการ์ดไม่สำเร็จ"]));
     expect(useBoardStore.getState().columns[0].cards).toHaveLength(1);
   });
+
+  it("says the assignee left when the server refuses them", async () => {
+    server.use(http.post(apiUrl("/cards"), notMember));
+    actions().handleAddCard("todo", "x", { assigneeId: "u-2" });
+    await waitFor(() =>
+      expect(toastMessages()).toEqual(["ผู้รับผิดชอบคนนี้ไม่ได้อยู่ใน Project แล้ว — เลือกคนอื่น"])
+    );
+  });
 });
 
 describe("handleChangeColumn", () => {
@@ -146,6 +156,15 @@ describe("handleUpdateCard", () => {
     actions().handleUpdateCard("c1", form, "title");
     await waitFor(() => expect(toastMessages()).toEqual(["บันทึกการ์ดไม่สำเร็จ — ลองอีกครั้ง"]));
     expect(findCard("c1")?.title).toBe("Old");
+  });
+
+  it("says the assignee left and restores the old assignee when the server refuses them", async () => {
+    server.use(http.patch(apiUrl("/cards/c1"), notMember));
+    actions().handleUpdateCard("c1", { assignee_id: "u-2" } as CardUpdateForm, "assignee_id");
+    await waitFor(() =>
+      expect(toastMessages()).toEqual(["ผู้รับผิดชอบคนนี้ไม่ได้อยู่ใน Project แล้ว — เลือกคนอื่น"])
+    );
+    expect(findCard("c1")?.assignee_id).toBeNull();
   });
 
   it("keeps fields that changed elsewhere while reverting", async () => {

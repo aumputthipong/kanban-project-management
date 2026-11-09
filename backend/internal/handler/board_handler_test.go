@@ -556,10 +556,16 @@ func TestGetCard_Success(t *testing.T) {
 				Card: db.Card{ID: validCardID, ColumnID: validColumnID, Title: "My Card"},
 			}, nil
 		},
+		GetBoardIDByColumnFn: func(ctx context.Context, columnID string) (string, error) {
+			return validBoardID, nil
+		},
+		GetBoardMemberRoleFn: func(ctx context.Context, boardID, userID string) (string, error) {
+			return "viewer", nil
+		},
 	}
 	h := NewBoardHandler(svc, nil, nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/cards/"+validCardID, nil)
-	req = chiCtx(req, "cardID", validCardID)
+	req = withUserID(chiCtx(req, "cardID", validCardID), validUserID)
 	w := httptest.NewRecorder()
 
 	httputil.MakeHandler(h.GetCard)(w, req)
