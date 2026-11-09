@@ -7,7 +7,9 @@ import { dateKey } from "@/utils/date_helper";
 import { ActivityFeedSkeleton } from "./ActivityFeedSkeleton";
 import {
   type ActivityCategory,
+  type ActivityNodeKind,
   activityCategory,
+  activityNodeKind,
   describeActivity,
   groupCardUpdates,
   relativeTime,
@@ -21,27 +23,13 @@ const FILTERS: { key: ActivityCategory; label: string }[] = [
   { key: "edited", label: "แก้ไข" },
 ];
 
-type NodeKind = "move" | "create" | "delete" | "edit";
-const NODE: Record<NodeKind, { wrap: string; Icon: typeof Plus }> = {
+const NODE: Record<ActivityNodeKind, { wrap: string; Icon: typeof Plus }> = {
   move: { wrap: "bg-indigo-50 text-blue-700", Icon: ArrowUpRight },
   create: { wrap: "bg-emerald-50 text-emerald-600", Icon: Plus },
   delete: { wrap: "bg-rose-50 text-rose-600", Icon: Trash2 },
   edit: { wrap: "bg-slate-100 text-slate-500", Icon: Pencil },
 };
 
-function nodeKind(eventType: string): NodeKind {
-  if (
-    eventType === "card.moved" ||
-    eventType.endsWith("promoted") ||
-    eventType === "planning.item_claimed" ||
-    eventType === "planning.item_released" ||
-    eventType === "planning.claim_auto_released_on_promote"
-  )
-    return "move";
-  if (eventType.endsWith(".created")) return "create";
-  if (eventType.endsWith(".deleted")) return "delete";
-  return "edit";
-}
 
 function dayHeader(iso: string): string {
   const today = new Date();
@@ -166,7 +154,7 @@ function ActivityItem({
 }) {
   const actorName = event.actor_name ?? "Someone";
   const { action, target, dest } = describeActivity(event, columnTitleById);
-  const { wrap, Icon } = NODE[nodeKind(event.event_type)];
+  const { wrap, Icon } = NODE[activityNodeKind(event.event_type)];
 
   return (
     <li className="relative flex gap-3 pb-3 last:pb-0">

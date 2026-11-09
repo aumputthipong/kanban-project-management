@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { describeActivity, eventBadge } from "@/components/board/overview/activityFormat";
+import {
+  activityCategory,
+  activityNodeKind,
+  describeActivity,
+  eventBadge,
+} from "@/components/board/overview/activityFormat";
 import { Pencil } from "lucide-react";
 import type { Activity } from "@/types/activity";
 
@@ -51,6 +56,27 @@ describe("activity feed event coverage", () => {
   it.each(EVENT_TYPES)("eventBadge gives %s a dedicated badge, not the fallback", (type) => {
     const { Icon, bg } = eventBadge(type, {});
     expect(Icon === Pencil && bg === "bg-slate-400").toBe(false);
+  });
+
+  // The feed's node icon and its "สร้าง / ลบ" filter must read planning's "_created" like card's ".created".
+  it.each([
+    ["card.created", "create"],
+    ["planning.session_created", "create"],
+    ["planning.comment_created", "create"],
+    ["column.deleted", "delete"],
+    ["planning.item_deleted", "delete"],
+    ["planning.session_deleted", "delete"],
+    ["card.moved", "move"],
+    ["planning.item_promoted", "move"],
+    ["planning.session_updated", "edit"],
+  ] as const)("shows %s as a %s node", (type, kind) => {
+    expect(activityNodeKind(type)).toBe(kind);
+  });
+
+  it.each([
+    "planning.session_created", "planning.item_deleted", "planning.comment_deleted", "card.created", "member.left",
+  ])("files %s under create / remove", (type) => {
+    expect(activityCategory(type)).toBe("addremove");
   });
 
   it("falls through to the raw string for an unknown type", () => {

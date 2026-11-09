@@ -241,7 +241,7 @@ export function eventBadge(
   ) {
     return { Icon: EyeOff, bg: "bg-slate-500" };
   }
-  if (/[._]deleted$/.test(eventType)) {
+  if (isDeleteEvent(eventType)) {
     return { Icon: Trash2, bg: "bg-rose-500" };
   }
   if (
@@ -256,13 +256,33 @@ export function eventBadge(
   return { Icon: Pencil, bg: "bg-slate-400" };
 }
 
+// Card/column events use ".created"; planning uses "_created" (planning.session_created).
+export const isCreateEvent = (eventType: string) => /[._]created$/.test(eventType);
+export const isDeleteEvent = (eventType: string) => /[._]deleted$/.test(eventType);
+
 export type ActivityCategory = "all" | "moved" | "addremove" | "edited";
 
 export function activityCategory(eventType: string): Exclude<ActivityCategory, "all"> {
   if (eventType === "card.moved" || eventType === "planning.item_promoted") return "moved";
-  if (eventType.endsWith(".created") || eventType.endsWith(".deleted")) return "addremove";
+  if (isCreateEvent(eventType) || isDeleteEvent(eventType)) return "addremove";
   if (eventType === "member.added" || eventType === "member.removed" || eventType === "member.left") {
     return "addremove";
   }
   return "edited";
+}
+
+export type ActivityNodeKind = "move" | "create" | "delete" | "edit";
+
+export function activityNodeKind(eventType: string): ActivityNodeKind {
+  if (
+    eventType === "card.moved" ||
+    eventType.endsWith("promoted") ||
+    eventType === "planning.item_claimed" ||
+    eventType === "planning.item_released" ||
+    eventType === "planning.claim_auto_released_on_promote"
+  )
+    return "move";
+  if (isCreateEvent(eventType)) return "create";
+  if (isDeleteEvent(eventType)) return "delete";
+  return "edit";
 }
