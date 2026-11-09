@@ -107,3 +107,22 @@ func TestEvictUser_UnknownRoom_IsNoop(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "hello", msg)
 }
+
+// A full send buffer must drop that client, never stall fan-out to the rest.
+func TestBroadcast_SlowClient_IsDroppedWithoutBlockingOthers(t *testing.T) {
+	h := startHub(t)
+	slow := &Client{hub: h.Hub, send: make(chan []byte), boardID: "board-1", userID: "slow"}
+	h.register <- slow
+	fast := joinRoom(h, "board-1", "fast")
+
+	h.Broadcast("board-1", []byte("one"))
+	h.Broadcast("board-1", []byte("two"))
+
+	for _, want := range []string{"one", "two"} {
+		msg, ok := receive(t, fast)
+		require.True(t, ok)
+		assert.Equal(t, want, msg)
+	}
+	_, ok := receive(t, slow)
+	assert.False(t, ok, "the slow client must be disconnected")
+}
