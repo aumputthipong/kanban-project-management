@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useBoardStore } from "@/store/useBoardStore";
 import type { Card } from "@/types/board";
+import { parseDueDate } from "@/utils/date_helper";
 
 // Derived from the store, no endpoint — see AGENTS.md "Ownership View Pattern".
 export interface OwnershipColumn {
@@ -25,7 +26,7 @@ export interface BoardOwnership {
 
 function dueRank(card: Card): number {
   if (!card.due_date) return Number.POSITIVE_INFINITY;
-  const t = new Date(card.due_date).getTime();
+  const t = parseDueDate(card.due_date).getTime();
   return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
 }
 

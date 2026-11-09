@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Clock, ListChecks } from "lucide-react";
-import { formatRelativeDueDate, formatThaiDate } from "@/utils/date_helper";
+import { formatRelativeDueDate, formatThaiDate, parseDueDate } from "@/utils/date_helper";
 import type { MyWorkCard, MyWorkStatus } from "@/types/myWork";
 
 interface CompactRowProps {
@@ -26,7 +26,7 @@ function statusDot(status: MyWorkStatus): string {
 function overdueDays(due: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const d = new Date(due);
+  const d = parseDueDate(due);
   d.setHours(0, 0, 0, 0);
   return Math.max(1, Math.round((today.getTime() - d.getTime()) / 86_400_000));
 }

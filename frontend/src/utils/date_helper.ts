@@ -4,7 +4,8 @@ export const getOverdueText = (dueDateStr: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const dueDate = new Date(dueDateStr);
+  const dueDate = parseDueDate(dueDateStr);
+  if (!isValidDate(dueDate)) return "";
   dueDate.setHours(0, 0, 0, 0);
 
   const diffTime = today.getTime() - dueDate.getTime();
@@ -17,7 +18,7 @@ export const getOverdueText = (dueDateStr: string) => {
 const isValidDate = (d: Date) => !Number.isNaN(d.getTime());
 
 export const formatThaiDate = (dateStr: string) => {
-  const date = new Date(dateStr);
+  const date = parseDueDate(dateStr);
   if (!isValidDate(date)) return "";
   return date.toLocaleDateString("th-TH", {
     year: "numeric",
@@ -30,7 +31,8 @@ export const getDaysRemainingText = (dueDateStr: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const dueDate = new Date(dueDateStr);
+  const dueDate = parseDueDate(dueDateStr);
+  if (!isValidDate(dueDate)) return "";
   dueDate.setHours(0, 0, 0, 0);
 
   const diffTime = dueDate.getTime() - today.getTime();
@@ -67,7 +69,7 @@ export const formatRelativeDueDate = (dueDateStr: string): string => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const dueDate = new Date(dueDateStr);
+  const dueDate = parseDueDate(dueDateStr);
   if (!isValidDate(dueDate)) return "";
   dueDate.setHours(0, 0, 0, 0);
 
@@ -88,7 +90,8 @@ export const formatRelativeDueDate = (dueDateStr: string): string => {
 export function daysOverdue(dueDateStr: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const due = new Date(dueDateStr);
+  const due = parseDueDate(dueDateStr);
+  if (!isValidDate(due)) return 0;
   due.setHours(0, 0, 0, 0);
   return Math.max(0, Math.ceil((today.getTime() - due.getTime()) / 86400000));
 }
@@ -97,7 +100,7 @@ export type DueTone = "overdue" | "today" | "upcoming";
 
 /** Short Thai due label for a board card; a done card is never overdue. */
 export function cardDueLabel(dueDateStr: string, isDone: boolean): { text: string; tone: DueTone } | null {
-  const due = new Date(dueDateStr);
+  const due = parseDueDate(dueDateStr);
   if (!isValidDate(due)) return null;
   const late = daysOverdue(dueDateStr);
   if (late > 0 && !isDone) return { text: `เลย ${late} วัน`, tone: "overdue" };
@@ -107,7 +110,7 @@ export function cardDueLabel(dueDateStr: string, isDone: boolean): { text: strin
 
 /** "16 ก.ย." — the year is added only outside the current year. */
 export function formatThaiShortDate(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = parseDueDate(dateStr);
   if (!isValidDate(d)) return "";
   const sameYear = d.getFullYear() === new Date().getFullYear();
   return d.toLocaleDateString("th-TH", {
@@ -120,7 +123,9 @@ export function formatThaiShortDate(dateStr: string): string {
 /** Date-only strings ("2026-12-24") are local calendar days; `new Date` would read them as UTC. */
 export const parseDueDate = (s: string): Date => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(s);
+  if (!m) return new Date(s);
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return dateKey(d) === s ? d : new Date(NaN);
 };
 
 /** Local YYYY-MM-DD for today plus `offsetDays`. */

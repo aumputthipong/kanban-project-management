@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Plus, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Card } from "@/types/board";
+import { parseDueDate } from "@/utils/date_helper";
 import { useBoardStore } from "@/store/useBoardStore";
 import {
   CriticalHero,
@@ -32,7 +33,7 @@ const UPCOMING_TH: Record<UpcomingBucket, string> = {
 function upcomingLabel(bucket: UpcomingBucket, card: Card): string {
   if (bucket !== "thisWeek") return UPCOMING_TH[bucket];
   if (card.due_date)
-    return new Date(card.due_date).toLocaleDateString("th-TH", { weekday: "short" });
+    return parseDueDate(card.due_date).toLocaleDateString("th-TH", { weekday: "short" });
   return "สัปดาห์นี้";
 }
 
@@ -40,7 +41,7 @@ const sortByDate = (list: Card[]) =>
   [...list].sort((a, b) => {
     if (!a.due_date) return 1;
     if (!b.due_date) return -1;
-    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    return parseDueDate(a.due_date).getTime() - parseDueDate(b.due_date).getTime();
   });
 
 export function TasksTabContent({
