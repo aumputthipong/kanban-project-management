@@ -271,12 +271,45 @@ func TestUpdateCard_MoreThanFiveTags_ErrorsAndRollsBackEntireUpdate(t *testing.T
 	_, err := f.svc.UpdateCard(ctx, service.UpdateCardParams{
 		ID: f.cardID, Title: util.StringToPtr("Should not stick"), TagIDs: &tooMany,
 	})
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, service.ErrTooManyTags)
 
 	reloaded, gerr := f.queries.GetCard(ctx, f.cardID)
 	require.NoError(t, gerr)
 	assert.Equal(t, "Test Card", reloaded.Title, "the title change earlier in the same transaction must have rolled back too")
 	assert.Empty(t, f.cardTags(ctx, t), "no tags should have been attached either")
+}
+
+func TestUpdateCard_TagFromAnotherBoard_ErrTagNotOnBoardAndRollsBack(t *testing.T) {
+	ctx := context.Background()
+	f := newCardFixture(t)
+	seed := testutil.NewSeed(t, f.pool)
+	own := seed.Tag(ctx, f.boardID, "own")
+	otherBoard := seed.Board(ctx, seed.User(ctx))
+	foreign := seed.Tag(ctx, otherBoard, "secret")
+	require.NoError(t, f.queries.InsertCardTag(ctx, db.InsertCardTagParams{CardID: f.cardID, TagID: own}))
+
+	mixed := []string{own, foreign}
+	_, err := f.svc.UpdateCard(ctx, service.UpdateCardParams{
+		ID: f.cardID, Title: util.StringToPtr("Should not stick"), TagIDs: &mixed,
+	})
+	assert.ErrorIs(t, err, service.ErrTagNotOnBoard)
+
+	reloaded, gerr := f.queries.GetCard(ctx, f.cardID)
+	require.NoError(t, gerr)
+	assert.Equal(t, "Test Card", reloaded.Title)
+	assert.Equal(t, []string{own}, f.cardTags(ctx, t), "existing tags must survive a rejected update")
+}
+
+func TestUpdateCard_DeletedTag_ErrTagNotOnBoard(t *testing.T) {
+	ctx := context.Background()
+	f := newCardFixture(t)
+	seed := testutil.NewSeed(t, f.pool)
+	gone := seed.Tag(ctx, f.boardID, "gone")
+	require.NoError(t, f.queries.DeleteTag(ctx, db.DeleteTagParams{ID: gone, BoardID: f.boardID}))
+
+	ids := []string{gone}
+	_, err := f.svc.UpdateCard(ctx, service.UpdateCardParams{ID: f.cardID, TagIDs: &ids})
+	assert.ErrorIs(t, err, service.ErrTagNotOnBoard)
 }
 
 // GetCardDetail

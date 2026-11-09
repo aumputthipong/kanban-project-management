@@ -66,7 +66,7 @@ func (h *BoardHandler) requireBoardMembership(r *http.Request, boardID, userID s
 // @Success  200     {object} dto.CardResponse
 // @Failure  400     {object} httputil.ErrorResponse
 // @Failure  404     {object} httputil.ErrorResponse
-// @Failure  422     {object} httputil.ErrorResponse "code: assignee_not_member"
+// @Failure  422     {object} httputil.ErrorResponse "code: assignee_not_member | too_many_tags | tag_not_on_board"
 // @Router   /api/cards/{cardID} [patch]
 func (h *BoardHandler) UpdateCard(w http.ResponseWriter, r *http.Request) error {
 	cardIDStr := chi.URLParam(r, "cardID")
@@ -124,6 +124,12 @@ func (h *BoardHandler) UpdateCard(w http.ResponseWriter, r *http.Request) error 
 		ImplementationNote: req.ImplementationNote,
 	})
 	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrTooManyTags):
+			return httputil.NewAPIError(http.StatusUnprocessableEntity, err.Error(), nil).WithCode("too_many_tags")
+		case errors.Is(err, service.ErrTagNotOnBoard):
+			return httputil.NewAPIError(http.StatusUnprocessableEntity, err.Error(), nil).WithCode("tag_not_on_board")
+		}
 		return httputil.NewAPIError(http.StatusInternalServerError, "Failed to update card", err)
 	}
 

@@ -726,3 +726,25 @@ func TestUpdateCard_ClearingAssignee_SkipsTheMemberCheck(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+
+// Tag errors from the service
+
+func TestUpdateCard_TagErrors_Return422WithCode(t *testing.T) {
+	cases := map[string]error{
+		"tag_not_on_board": service.ErrTagNotOnBoard,
+		"too_many_tags":    service.ErrTooManyTags,
+	}
+	for code, svcErr := range cases {
+		t.Run(code, func(t *testing.T) {
+			svc := assigneeCheckService(t, otherUserID)
+			svc.UpdateCardFn = func(ctx context.Context, arg service.UpdateCardParams) (service.UpdateCardResult, error) {
+				return service.UpdateCardResult{}, svcErr
+			}
+
+			w := patchCard(t, svc, `{"tag_ids":["`+validBoardID+`"]}`)
+
+			assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+			assert.Contains(t, w.Body.String(), `"code":"`+code+`"`)
+		})
+	}
+}
