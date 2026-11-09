@@ -68,7 +68,7 @@ Best for: zero ops; managed everything.
 | Backend   | Railway / Render Docker service   | Build context: `backend/`; expose port 8080                  |
 | DB        | Neon / Supabase                   | Use `?sslmode=require` and the **pooler** connection string  |
 
-Set env vars on each platform — copy from `backend/.env.example` and `frontend/.env.example`. The Google OAuth `GOOGLE_REDIRECT_URL` must match what's registered in the Google Cloud console.
+Set env vars on each platform — copy from `backend/.env.example` and `frontend/.env.example`. The Google OAuth `GOOGLE_REDIRECT_URL` must match what's registered in the Google Cloud console. With the Vercel `/api` rewrite in front, point it at the **frontend** origin (`https://<frontend>/api/auth/google/callback`): the sign-in link is always the same-origin `/api/auth/google`, so the `oauth_state` cookie lives on the frontend origin.
 
 > **Cross-site cookies (required for this split):** frontend and backend are on different sites (`*.vercel.app` vs `*.onrender.com`), so set **`COOKIE_CROSS_SITE=true`** on the backend. This switches the auth cookies to `SameSite=None; Secure`. Without it the browser refuses to send the cookie cross-site and login silently loops (see "Unauthorized loop" below). Both hosts serve HTTPS, so `Secure` is satisfied.
 
