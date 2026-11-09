@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { API_URL } from "@/lib/constants";
+import { GOOGLE_SIGN_IN_URL } from "@/lib/constants";
 import { apiClient } from "@/lib/apiClient";
 import { loginErrorMessage, safeRedirectPath } from "@/lib/authForm";
 import { ApiWarmup } from "@/components/demo/ApiWarmup";
@@ -77,7 +77,7 @@ function LoginForm() {
       {/* Google OAuth */}
       <div className="mb-6">
         <a
-          href={`${API_URL}/auth/google`}
+          href={GOOGLE_SIGN_IN_URL}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
