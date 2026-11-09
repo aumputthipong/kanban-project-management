@@ -5,6 +5,7 @@ export const getOverdueText = (dueDateStr: string) => {
   today.setHours(0, 0, 0, 0);
 
   const dueDate = parseDueDate(dueDateStr);
+  if (!isValidDate(dueDate)) return "";
   dueDate.setHours(0, 0, 0, 0);
 
   const diffTime = today.getTime() - dueDate.getTime();
@@ -31,6 +32,7 @@ export const getDaysRemainingText = (dueDateStr: string) => {
   today.setHours(0, 0, 0, 0);
 
   const dueDate = parseDueDate(dueDateStr);
+  if (!isValidDate(dueDate)) return "";
   dueDate.setHours(0, 0, 0, 0);
 
   const diffTime = dueDate.getTime() - today.getTime();
@@ -89,6 +91,7 @@ export function daysOverdue(dueDateStr: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const due = parseDueDate(dueDateStr);
+  if (!isValidDate(due)) return 0;
   due.setHours(0, 0, 0, 0);
   return Math.max(0, Math.ceil((today.getTime() - due.getTime()) / 86400000));
 }

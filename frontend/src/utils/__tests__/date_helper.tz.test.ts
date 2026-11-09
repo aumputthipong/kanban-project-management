@@ -11,6 +11,7 @@ import {
   formatThaiShortDate,
   getDaysRemainingText,
   getOverdueText,
+  parseDueDate,
 } from "@/utils/date_helper";
 
 // A zone behind UTC is where date-only strings parsed as UTC land on the previous day.
@@ -67,5 +68,13 @@ describe("date-only due dates in a zone behind UTC", () => {
     expect(stats.overdueCards.map((c) => c.id)).toEqual([]);
     expect(stats.todayCards.map((c) => c.id)).toEqual(["today"]);
     expect(stats.tomorrowCards.map((c) => c.id)).toEqual(["tomorrow"]);
+  });
+
+  it("rejects a rolled-over date instead of shifting it", () => {
+    expect(Number.isNaN(parseDueDate("2026-02-30").getTime())).toBe(true);
+    expect(daysOverdue("2026-02-30")).toBe(0);
+    expect(getOverdueText("2026-02-30")).toBe("");
+    expect(getDaysRemainingText("2026-02-30")).toBe("");
+    expect(cardDueLabel("2026-02-30", false)).toBeNull();
   });
 });
