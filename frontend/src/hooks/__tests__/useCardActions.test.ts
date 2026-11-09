@@ -167,6 +167,21 @@ describe("handleUpdateCard", () => {
     expect(findCard("c1")?.assignee_id).toBeNull();
   });
 
+  it("says a tag is gone and restores the old tags when the server refuses it", async () => {
+    server.use(
+      http.patch(apiUrl("/cards/c1"), () =>
+        HttpResponse.json({ error: "server text", code: "tag_not_on_board" }, { status: 422 })
+      )
+    );
+    const tags = [{ id: "t-gone", board_id: "b1", name: "gone", color: "#000000" }];
+    actions().handleUpdateCard("c1", { tags } as CardUpdateForm, "tags");
+    expect(findCard("c1")?.tags).toEqual(tags);
+    await waitFor(() =>
+      expect(toastMessages()).toEqual(["มี tag ที่ถูกลบไปแล้ว — เปิดการ์ดใหม่แล้วเลือก tag อีกครั้ง"])
+    );
+    expect(findCard("c1")?.tags ?? []).toEqual([]);
+  });
+
   it("keeps fields that changed elsewhere while reverting", async () => {
     let release!: () => void;
     server.use(

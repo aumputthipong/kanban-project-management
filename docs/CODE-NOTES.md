@@ -130,6 +130,10 @@ the behaviour.
   WS handshake.
 - A card's assignee must be a board member (422 `assignee_not_member` on create
   and update), otherwise the card shows in an outsider's My Work.
+- A card's `tag_ids` must all belong to the card's board (422 `tag_not_on_board`),
+  otherwise the card response would leak another board's tag name and color. A
+  tag deleted while the picker was open gets the same code; the check runs in
+  the update transaction, so the other fields roll back too.
 - Removing a member (or leaving) unassigns their **open** cards on that board in
   the same transaction: someone who can't open the board can't own its work, and
   their My Work would otherwise list cards they can no longer open. Done cards keep

@@ -4,10 +4,16 @@ import { ApiError, apiClient, toastFailure } from "@/lib/apiClient";
 import { buildCardFieldUpdate, type CardField } from "@/lib/cardPatch";
 import type { Card, CardUpdateForm, Column } from "@/types/board";
 
-// The member was removed while this form was open (backend code, not message text).
-const assigneeGone = (err: unknown, fallback: string) =>
-  err instanceof ApiError && err.code === "assignee_not_member"
-    ? "ผู้รับผิดชอบคนนี้ไม่ได้อยู่ใน Project แล้ว — เลือกคนอื่น"
+// Branch on the backend code, never the message text.
+const SAVE_ERROR_BY_CODE: Record<string, string> = {
+  assignee_not_member: "ผู้รับผิดชอบคนนี้ไม่ได้อยู่ใน Project แล้ว — เลือกคนอื่น",
+  tag_not_on_board: "มี tag ที่ถูกลบไปแล้ว — เปิดการ์ดใหม่แล้วเลือก tag อีกครั้ง",
+  too_many_tags: "ใส่ tag ได้สูงสุด 5 อัน",
+};
+
+const saveErrorMessage = (err: unknown, fallback: string) =>
+  err instanceof ApiError && err.code && Object.hasOwn(SAVE_ERROR_BY_CODE, err.code)
+    ? SAVE_ERROR_BY_CODE[err.code]
     : fallback;
 
 function revertWith(snapshot: Column[], message: string) {
@@ -93,7 +99,7 @@ export function useCardActions() {
           completed_subtasks: 0,
         });
       })
-      .catch((err) => toastFailure(err, assigneeGone(err, "สร้างการ์ดไม่สำเร็จ")));
+      .catch((err) => toastFailure(err, saveErrorMessage(err, "สร้างการ์ดไม่สำเร็จ")));
   };
 
   const handleChangeColumn = (cardId: string, toColumnId: string) => {
@@ -142,7 +148,7 @@ export function useCardActions() {
       () => true,
       (err) => {
         restoreFields(cardId, current, patch);
-        toastFailure(err, assigneeGone(err, "บันทึกการ์ดไม่สำเร็จ — ลองอีกครั้ง"));
+        toastFailure(err, saveErrorMessage(err, "บันทึกการ์ดไม่สำเร็จ — ลองอีกครั้ง"));
         return false;
       },
     );

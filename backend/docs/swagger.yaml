@@ -919,7 +919,7 @@ paths:
           schema:
             $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
         "422":
-          description: 'code: assignee_not_member'
+          description: 'code: assignee_not_member | too_many_tags | tag_not_on_board'
           schema:
             $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
       security:

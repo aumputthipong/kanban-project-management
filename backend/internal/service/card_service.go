@@ -2,11 +2,19 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/db"
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/util"
+)
+
+const maxTagsPerCard = 5
+
+var (
+	ErrTooManyTags   = errors.New("card cannot have more than 5 tags")
+	ErrTagNotOnBoard = errors.New("tag does not belong to this card's board")
 )
 
 // Set=false: no change. Set=true with nil Value: clear to NULL.
@@ -97,8 +105,11 @@ func (s *BoardService) UpdateCard(ctx context.Context, arg UpdateCardParams) (Up
 	}
 
 	if arg.TagIDs != nil {
-		if len(*arg.TagIDs) > 5 {
-			return UpdateCardResult{}, fmt.Errorf("card cannot have more than 5 tags")
+		if len(*arg.TagIDs) > maxTagsPerCard {
+			return UpdateCardResult{}, ErrTooManyTags
+		}
+		if err := requireBoardTags(ctx, qtx, arg.ID, *arg.TagIDs); err != nil {
+			return UpdateCardResult{}, err
 		}
 		if err := qtx.ClearCardTags(ctx, arg.ID); err != nil {
 			return UpdateCardResult{}, fmt.Errorf("clear card tags: %w", err)
@@ -123,6 +134,31 @@ func (s *BoardService) UpdateCard(ctx context.Context, arg UpdateCardParams) (Up
 		return UpdateCardResult{}, fmt.Errorf("commit tx: %w", err)
 	}
 	return UpdateCardResult{Card: card, Tags: tags}, nil
+}
+
+// A deleted tag and another board's tag look the same to the caller: not on this board.
+func requireBoardTags(ctx context.Context, q *db.Queries, cardID string, tagIDs []string) error {
+	if len(tagIDs) == 0 {
+		return nil
+	}
+	boardID, err := q.GetBoardIDByCard(ctx, cardID)
+	if err != nil {
+		return fmt.Errorf("resolve card board: %w", err)
+	}
+	boardTags, err := q.GetTagsByBoardID(ctx, boardID)
+	if err != nil {
+		return fmt.Errorf("load board tags: %w", err)
+	}
+	onBoard := make(map[string]bool, len(boardTags))
+	for _, t := range boardTags {
+		onBoard[t.ID] = true
+	}
+	for _, id := range tagIDs {
+		if !onBoard[id] {
+			return ErrTagNotOnBoard
+		}
+	}
+	return nil
 }
 
 func (s *BoardService) GetAllUsers(ctx context.Context) ([]db.GetAllUsersRow, error) {
