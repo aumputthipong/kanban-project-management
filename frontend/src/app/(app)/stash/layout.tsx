@@ -6,7 +6,7 @@ import { Board } from "@/types/board";
 async function getBoards(): Promise<Board[]> {
   try {
     return await apiClient<Board[]>("/boards", {
-      next: { revalidate: 60 },
+      cache: "no-store",
       headers: await forwardedHeaders(),
     });
   } catch (err) {
