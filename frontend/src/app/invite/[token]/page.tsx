@@ -8,6 +8,14 @@ import { inviteApi } from "@/lib/inviteApi";
 import { ApiError } from "@/lib/apiClient";
 import { useToastStore } from "@/store/useToastStore";
 
+function inviteErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 410) return "ลิงก์เชิญนี้หมดอายุแล้ว";
+    if (err.status === 404) return "ลิงก์เชิญไม่ถูกต้องหรือถูกปิดแล้ว";
+  }
+  return "เข้าร่วม Project ไม่สำเร็จ";
+}
+
 export default function InviteAcceptPage() {
   const params = useParams();
   const router = useRouter();
@@ -31,13 +39,7 @@ export default function InviteAcceptPage() {
         if (cancelled) return;
         // 401 → apiClient already redirected to login; let that win.
         if (err instanceof ApiError && err.status === 401) return;
-        const message =
-          err instanceof ApiError
-            ? err.status === 410
-              ? "ลิงก์เชิญนี้หมดอายุแล้ว"
-              : err.message
-            : "เข้าร่วม Project ไม่สำเร็จ";
-        setError(message);
+        setError(inviteErrorMessage(err));
       });
 
     return () => {

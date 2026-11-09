@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/constants";
 import { apiClient } from "@/lib/apiClient";
+import { registerErrorMessage } from "@/lib/authForm";
 
 export default function RegisterPage() {
   const router  = useRouter();
@@ -27,7 +28,7 @@ export default function RegisterPage() {
     router.push("/dashboard");
     router.refresh();
   } catch (err) {
-    setError(err instanceof Error ? err.message : "Registration failed.");
+    setError(registerErrorMessage(err));
   } finally {
     setIsLoading(false);
   }

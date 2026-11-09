@@ -1,4 +1,5 @@
 import type { Card } from "@/types/board";
+import { parseDueDate } from "@/utils/date_helper";
 
 export type PillState = "todo" | "inProgress" | "done" | "overdue";
 
@@ -7,7 +8,7 @@ export function classifyPillState(card: Card): PillState {
   if (card.is_done) return "done";
 
   if (card.due_date) {
-    const dueStart = new Date(card.due_date).setHours(0, 0, 0, 0);
+    const dueStart = parseDueDate(card.due_date).setHours(0, 0, 0, 0);
     const todayStart = new Date().setHours(0, 0, 0, 0);
     if (dueStart < todayStart) return "overdue";
   }
