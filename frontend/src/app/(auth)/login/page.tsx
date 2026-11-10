@@ -11,8 +11,9 @@ import { ApiWarmup } from "@/components/demo/ApiWarmup";
 import { TryDemoButton } from "@/components/demo/TryDemoButton";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  oauth_failed: "Sign in with Google failed. Please try again.",
-  access_denied: "Google sign-in was cancelled.",
+  oauth_failed: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองใหม่อีกครั้ง",
+  access_denied: "ยกเลิกการเข้าสู่ระบบด้วย Google แล้ว",
+  google_email_unverified: "อีเมล Google นี้ยังไม่ได้ยืนยัน ยืนยันอีเมลกับ Google ก่อน แล้วลองเข้าสู่ระบบอีกครั้ง",
 };
 
 // useSearchParams needs a Suspense boundary in Next 16.
@@ -42,7 +43,7 @@ function LoginForm() {
   useEffect(() => {
     const oauthError = searchParams.get("error");
     if (oauthError) {
-      setError(OAUTH_ERROR_MESSAGES[oauthError] ?? "Authentication failed. Please try again.");
+      setError(OAUTH_ERROR_MESSAGES[oauthError] ?? "เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง");
     }
   }, [searchParams]);
 

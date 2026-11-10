@@ -108,6 +108,11 @@ the behaviour.
   "wrong password" vs "OAuth-only account" (anti-enumeration).
 - Logout always returns 204, even if revoking fails — a transient DB error must
   not trap the user in a logged-in state.
+- Google sign-in links to an existing account by email (`UpsertOAuthUser` is
+  `ON CONFLICT (email)`), so the callback refuses an unverified Google email
+  (redirects to `/login?error=google_email_unverified`). The v2 userinfo field
+  is `verified_email`, not OIDC's `email_verified`. There is no
+  programmatic OAuth endpoint: a body-supplied email must never mint a session.
 - The WS ticket carries `aud=ws`: `Parse` rejects it (a ticket leaked from a URL
   must not open the REST API) and `ParseWSTicket` rejects session tokens.
 

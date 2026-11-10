@@ -434,27 +434,6 @@ definitions:
     - email
     - password
     type: object
-  internal_handler.oauthRequest:
-    properties:
-      email:
-        type: string
-      full_name:
-        maxLength: 120
-        minLength: 1
-        type: string
-      provider:
-        enum:
-        - google
-        - github
-        type: string
-      provider_id:
-        type: string
-    required:
-    - email
-    - full_name
-    - provider
-    - provider_id
-    type: object
   internal_handler.registerRequest:
     properties:
       email:
@@ -485,7 +464,7 @@ info:
     name: Turtask
   description: |-
     Multi-board Kanban + task management with realtime sync.
-    Auth uses an HttpOnly `auth_token` cookie issued by /api/auth/login or /api/auth/oauth.
+    Auth uses an HttpOnly `auth_token` cookie issued by /api/auth/login or the Google callback.
   title: Turtask API
   version: "1.0"
 paths:
@@ -562,31 +541,6 @@ paths:
       security:
       - CookieAuth: []
       summary: Current user
-      tags:
-      - auth
-  /api/auth/oauth:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Verified provider payload
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/internal_handler.oauthRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/internal_handler.authUserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
-      summary: OAuth callback (programmatic)
       tags:
       - auth
   /api/auth/refresh:

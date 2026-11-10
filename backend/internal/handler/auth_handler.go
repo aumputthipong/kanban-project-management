@@ -62,13 +62,6 @@ type loginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type oauthRequest struct {
-	Email      string `json:"email"       validate:"required,email"`
-	FullName   string `json:"full_name"   validate:"required,min=1,max=120"`
-	Provider   string `json:"provider"    validate:"required,oneof=google github"`
-	ProviderID string `json:"provider_id" validate:"required"`
-}
-
 // @Summary  Register
 // @Tags     auth
 // @Accept   json
@@ -128,36 +121,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) error {
 			return httputil.NewAPIError(http.StatusUnauthorized, "Invalid credentials", nil)
 		}
 		return httputil.NewAPIError(http.StatusInternalServerError, "Failed to login", err)
-	}
-
-	if err := h.issueSession(w, r, user.ID, user.Email); err != nil {
-		return err
-	}
-	httputil.RespondJSON(w, http.StatusOK, authUserResponse{
-		ID:       user.ID,
-		Email:    user.Email,
-		FullName: user.FullName,
-	})
-	return nil
-}
-
-// @Summary  OAuth callback (programmatic)
-// @Tags     auth
-// @Accept   json
-// @Produce  json
-// @Param    payload body     oauthRequest       true  "Verified provider payload"
-// @Success  200     {object} authUserResponse
-// @Failure  400     {object} httputil.ErrorResponse
-// @Router   /api/auth/oauth [post]
-func (h *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) error {
-	var req oauthRequest
-	if err := httputil.DecodeAndValidate(r, &req); err != nil {
-		return err
-	}
-
-	user, err := h.authService.UpsertOAuthUser(r.Context(), req.Email, req.FullName, req.Provider, req.ProviderID)
-	if err != nil {
-		return httputil.NewAPIError(http.StatusInternalServerError, "Failed to authenticate", err)
 	}
 
 	if err := h.issueSession(w, r, user.ID, user.Email); err != nil {

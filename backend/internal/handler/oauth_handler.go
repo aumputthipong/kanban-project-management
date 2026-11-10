@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -16,14 +17,18 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+const googleUserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
+
 type googleUserInfo struct {
-	Sub   string `json:"sub"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
+	Sub           string `json:"sub"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	Name          string `json:"name"`
 }
 
 type OAuthHandler struct {
 	googleConfig *oauth2.Config
+	userInfoURL  string
 	authService  service.AuthServicer
 	frontendURL  string
 	production   bool
@@ -46,6 +51,7 @@ func NewOAuthHandler(
 			},
 			Endpoint: google.Endpoint,
 		},
+		userInfoURL: googleUserInfoURL,
 		authService: authService,
 		frontendURL: frontendURL,
 		production:  production,
@@ -74,20 +80,30 @@ func (h *OAuthHandler) RedirectToGoogle(w http.ResponseWriter, r *http.Request) 
 
 func (h *OAuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Request) error {
 	cookie, err := r.Cookie("oauth_state")
-	if err != nil || cookie.Value != r.URL.Query().Get("state") {
+	state := r.URL.Query().Get("state")
+	if err != nil || state == "" || subtle.ConstantTimeCompare([]byte(cookie.Value), []byte(state)) != 1 {
 		return httputil.NewAPIError(http.StatusBadRequest, "Invalid state", nil)
 	}
 	http.SetCookie(w, &http.Cookie{Name: "oauth_state", MaxAge: -1, Path: "/"})
 
 	code := r.URL.Query().Get("code")
+	if code == "" {
+		return httputil.NewAPIError(http.StatusBadRequest, "Missing code", nil)
+	}
 	oauthToken, err := h.googleConfig.Exchange(r.Context(), code)
 	if err != nil {
 		return httputil.NewAPIError(http.StatusBadRequest, "Failed to exchange token", err)
 	}
 
-	userInfo, err := fetchGoogleUserInfo(r.Context(), oauthToken.AccessToken)
+	userInfo, err := h.fetchGoogleUserInfo(r.Context(), oauthToken.AccessToken)
 	if err != nil {
 		return httputil.NewAPIError(http.StatusInternalServerError, "Failed to get user info", err)
+	}
+	// Accounts are matched by email, so an unverified one could claim someone else's account.
+	if !userInfo.VerifiedEmail || userInfo.Email == "" {
+		slog.Warn("oauth: google email not verified", "sub", userInfo.Sub)
+		http.Redirect(w, r, h.frontendURL+"/login?error=google_email_unverified", http.StatusTemporaryRedirect)
+		return nil
 	}
 
 	user, err := h.authService.UpsertOAuthUser(r.Context(), userInfo.Email, userInfo.Name, "google", userInfo.Sub)
@@ -113,9 +129,8 @@ func (h *OAuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
-func fetchGoogleUserInfo(ctx context.Context, accessToken string) (*googleUserInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://www.googleapis.com/oauth2/v2/userinfo", nil)
+func (h *OAuthHandler) fetchGoogleUserInfo(ctx context.Context, accessToken string) (*googleUserInfo, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.userInfoURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)
 	}

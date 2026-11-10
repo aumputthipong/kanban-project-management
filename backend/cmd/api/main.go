@@ -35,7 +35,7 @@ var version = "dev"
 // @title           Turtask API
 // @version         1.0
 // @description     Multi-board Kanban + task management with realtime sync.
-// @description     Auth uses an HttpOnly `auth_token` cookie issued by /api/auth/login or /api/auth/oauth.
+// @description     Auth uses an HttpOnly `auth_token` cookie issued by /api/auth/login or the Google callback.
 //
 // @contact.name    Turtask
 //
