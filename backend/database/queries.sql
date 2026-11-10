@@ -258,16 +258,16 @@ JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $1 AND bm.role = 'o
 WHERE b.deleted_at IS NOT NULL
 ORDER BY b.deleted_at DESC;
 
--- name: HardDeleteBoard :exec
+-- name: HardDeleteBoard :execrows
 -- Permanent delete — child rows (columns, cards, members, ...) go with it
--- via ON DELETE CASCADE.
+-- via ON DELETE CASCADE. Only a stashed board can be deleted.
 DELETE FROM boards
-WHERE id = $1;
+WHERE id = $1 AND deleted_at IS NOT NULL;
 
--- name: RestoreStashedBoard :exec
+-- name: RestoreStashedBoard :execrows
 UPDATE boards
 SET deleted_at = NULL
-WHERE id = $1;
+WHERE id = $1 AND deleted_at IS NOT NULL;
 
 
 -- name: UpdateBoard :one

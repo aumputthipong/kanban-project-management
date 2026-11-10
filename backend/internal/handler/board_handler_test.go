@@ -17,6 +17,7 @@ import (
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/service"
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/service/mock"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -309,6 +310,50 @@ func TestHardDelete_Success(t *testing.T) {
 	httputil.MakeHandler(h.HardDelete)(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestHardDelete_NotStashed_Returns404(t *testing.T) {
+	svc := &mock.MockBoardService{
+		HardDeleteBoardFn: func(ctx context.Context, id string) error { return pgx.ErrNoRows },
+	}
+	h := NewBoardHandler(svc, nil, nil, nil)
+	req := chiCtx(httptest.NewRequest(http.MethodDelete, "/stash/"+validBoardID, nil), "boardID", validBoardID)
+	w := httptest.NewRecorder()
+
+	httputil.MakeHandler(h.HardDelete)(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+// RestoreBoard
+
+func TestRestoreBoard_Success(t *testing.T) {
+	svc := &mock.MockBoardService{
+		RestoreBoardFn: func(ctx context.Context, id string) error {
+			assert.Equal(t, validBoardID, id)
+			return nil
+		},
+	}
+	h := NewBoardHandler(svc, nil, nil, nil)
+	req := chiCtx(httptest.NewRequest(http.MethodPatch, "/stash/"+validBoardID+"/restore", nil), "boardID", validBoardID)
+	w := httptest.NewRecorder()
+
+	httputil.MakeHandler(h.RestoreBoard)(w, req)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestRestoreBoard_NotStashed_Returns404(t *testing.T) {
+	svc := &mock.MockBoardService{
+		RestoreBoardFn: func(ctx context.Context, id string) error { return pgx.ErrNoRows },
+	}
+	h := NewBoardHandler(svc, nil, nil, nil)
+	req := chiCtx(httptest.NewRequest(http.MethodPatch, "/stash/"+validBoardID+"/restore", nil), "boardID", validBoardID)
+	w := httptest.NewRecorder()
+
+	httputil.MakeHandler(h.RestoreBoard)(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 // GetBoardMembers
