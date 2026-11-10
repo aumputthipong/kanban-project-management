@@ -84,7 +84,13 @@ describe("LoginPage", () => {
   it("shows the OAuth failure message from the error param", () => {
     search = "error=access_denied";
     renderWithUser(<LoginPage />);
-    expect(screen.getByText("Google sign-in was cancelled.")).toBeInTheDocument();
+    expect(screen.getByText("ยกเลิกการเข้าสู่ระบบด้วย Google แล้ว")).toBeInTheDocument();
+  });
+
+  it("explains an unverified Google email in Thai", () => {
+    search = "error=google_email_unverified";
+    renderWithUser(<LoginPage />);
+    expect(screen.getByText(/อีเมล Google นี้ยังไม่ได้ยืนยัน/)).toBeInTheDocument();
   });
 
   it("requires both fields", () => {

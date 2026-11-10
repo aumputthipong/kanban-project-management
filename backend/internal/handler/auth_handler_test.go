@@ -249,49 +249,6 @@ func TestLogin_ServiceError_Returns500(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
-// OAuthCallback
-
-func TestOAuthCallback_Success(t *testing.T) {
-	svc := &mock.MockAuthService{
-		UpsertOAuthUserFn: func(ctx context.Context, email, fullName, provider, providerID string) (db.User, error) {
-			assert.Equal(t, "google", provider)
-			return db.User{ID: validUserID, Email: email, FullName: fullName}, nil
-		},
-		IssueRefreshTokenFn: func(ctx context.Context, userID, ua, ip string) (string, error) {
-			return "raw", nil
-		},
-	}
-	h := newTestAuthHandler(svc)
-
-	body := strings.NewReader(`{"email":"jane@example.com","full_name":"Jane","provider":"google","provider_id":"abc"}`)
-	req := httptest.NewRequest(http.MethodPost, "/auth/oauth", body)
-	w := httptest.NewRecorder()
-
-	httputil.MakeHandler(h.OAuthCallback)(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	_, hasAuth := findCookie(w, "auth_token")
-	assert.True(t, hasAuth)
-}
-
-func TestOAuthCallback_UnknownProvider_Returns400(t *testing.T) {
-	svc := &mock.MockAuthService{
-		UpsertOAuthUserFn: func(ctx context.Context, email, fullName, provider, providerID string) (db.User, error) {
-			t.Fatal("must reject unknown provider before service call")
-			return db.User{}, nil
-		},
-	}
-	h := newTestAuthHandler(svc)
-
-	body := strings.NewReader(`{"email":"x@y.com","full_name":"X","provider":"facebook","provider_id":"abc"}`)
-	req := httptest.NewRequest(http.MethodPost, "/auth/oauth", body)
-	w := httptest.NewRecorder()
-
-	httputil.MakeHandler(h.OAuthCallback)(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
 // Logout
 
 func TestLogout_WithRefreshCookie_RevokesAndClearsBoth(t *testing.T) {

@@ -136,45 +136,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/oauth": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "OAuth callback (programmatic)",
-                "parameters": [
-                    {
-                        "description": "Verified provider payload",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.oauthRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handler.authUserResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/auth/refresh": {
             "post": {
                 "produces": [
@@ -1856,35 +1817,6 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler.oauthRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "full_name",
-                "provider",
-                "provider_id"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string",
-                    "maxLength": 120,
-                    "minLength": 1
-                },
-                "provider": {
-                    "type": "string",
-                    "enum": [
-                        "google",
-                        "github"
-                    ]
-                },
-                "provider_id": {
-                    "type": "string"
-                }
-            }
-        },
         "internal_handler.registerRequest": {
             "type": "object",
             "required": [
@@ -1936,7 +1868,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Turtask API",
-	Description:      "Multi-board Kanban + task management with realtime sync.\nAuth uses an HttpOnly `auth_token` cookie issued by /api/auth/login or /api/auth/oauth.",
+	Description:      "Multi-board Kanban + task management with realtime sync.\nAuth uses an HttpOnly `auth_token` cookie issued by /api/auth/login or the Google callback.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

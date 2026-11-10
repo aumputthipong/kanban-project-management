@@ -80,7 +80,6 @@ func setupRoutes(d routerDeps) http.Handler {
 
 		r.Post("/register", httputil.MakeHandler(d.authHandler.Register))
 		r.Post("/login", httputil.MakeHandler(d.authHandler.Login))
-		r.Post("/oauth", httputil.MakeHandler(d.authHandler.OAuthCallback))
 		// Own limiter: each call seeds a whole board.
 		r.With(d.limit(middleware.DemoRateLimit())).Post("/demo", httputil.MakeHandler(d.authHandler.Demo))
 		r.Post("/logout", httputil.MakeHandler(d.authHandler.Logout))
