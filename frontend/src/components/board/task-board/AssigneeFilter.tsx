@@ -36,7 +36,7 @@ export function MyTasksToggle() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "m" && e.key !== "M") return;
+      if ((e.key !== "m" && e.key !== "M") || e.repeat) return;
       if (e.ctrlKey || e.metaKey || e.altKey || isTypingOrInDialog(e.target)) return;
       if (!currentUserId) return;
       setFilterAssigneeId(active ? null : currentUserId);

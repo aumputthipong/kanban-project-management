@@ -24,6 +24,25 @@ function serveBoard(overrides: Partial<Record<"board" | "me" | "members" | "list
 }
 
 describe("useBoardData", () => {
+  it("clears board filters when switching to another board, not on a re-render", async () => {
+    serveBoard();
+    server.use(
+      http.get(apiUrl("/boards/b2"), () => HttpResponse.json([])),
+      http.get(apiUrl("/boards/b2/members"), () => HttpResponse.json([])),
+    );
+    const { result, rerender } = renderHook(({ id }) => useBoardData(id), { initialProps: { id: "b1" } });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    useBoardStore.setState({ filterAssigneeId: "me", filterPriorities: ["high"], filterTagIds: ["t1"] });
+    rerender({ id: "b1" });
+    expect(useBoardStore.getState().filterTagIds).toEqual(["t1"]);
+
+    rerender({ id: "b2" });
+    const s = useBoardStore.getState();
+    expect([s.filterAssigneeId, s.filterPriorities, s.filterTagIds]).toEqual([null, [], []]);
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+  });
+
   it("hydrates columns, current user, members and board meta", async () => {
     serveBoard();
     const { result } = renderHook(() => useBoardData("b1"));
