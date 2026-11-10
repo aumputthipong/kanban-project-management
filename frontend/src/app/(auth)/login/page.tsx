@@ -13,6 +13,7 @@ import { TryDemoButton } from "@/components/demo/TryDemoButton";
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   oauth_failed: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองใหม่อีกครั้ง",
   access_denied: "ยกเลิกการเข้าสู่ระบบด้วย Google แล้ว",
+  session_expired: "เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง",
   google_email_unverified: "อีเมล Google นี้ยังไม่ได้ยืนยัน ยืนยันอีเมลกับ Google ก่อน แล้วลองเข้าสู่ระบบอีกครั้ง",
 };
 

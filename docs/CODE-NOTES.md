@@ -77,6 +77,14 @@ the behaviour.
   `""` to clear a date that was originally empty.
 - "Done today" is session-local — the API has no such counter.
 
+### Session expiry
+
+- The proxy only checks that an `auth_token` cookie exists, so it sends
+  `/login` to `/dashboard` for any cookie. A server page that gets 401 must
+  not redirect to `/login` directly (that loops forever); it goes through
+  `/auth/session-expired`, which deletes the cookie and then shows login with
+  "เซสชันหมดอายุ". Other API failures throw to the error boundary.
+
 ### Project list & landing
 
 - "Recent" sort keeps the backend order (per-user `last_accessed_at`). Sorting

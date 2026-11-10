@@ -1,6 +1,19 @@
 import { forwardedHeaders } from "@/lib/forwardedHeaders";
 import { API_URL } from "@/lib/constants";
 
+export class ApiFetchError extends Error {
+  constructor(public status: number, path: string) {
+    super(`API error: ${status} ${path}`);
+    this.name = "ApiFetchError";
+  }
+}
+
+export const isUnauthorized = (err: unknown) => err instanceof ApiFetchError && err.status === 401;
+
+/** Where a server page sends a visitor whose session cookie the API rejected. */
+export const sessionExpiredPath = (back: string) =>
+  `/auth/session-expired?redirect=${encodeURIComponent(back)}`;
+
 type FetchOptions = Omit<RequestInit, "headers"> & {
   headers?: Record<string, string>;
 };
@@ -19,7 +32,7 @@ export async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${path}`);
+    throw new ApiFetchError(res.status, path);
   }
 
   return res.json();

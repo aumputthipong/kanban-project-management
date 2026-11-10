@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
-import { apiFetch } from "@/lib/api";
+import { apiFetch, isUnauthorized, sessionExpiredPath } from "@/lib/api";
 import { Board } from "@/types/board";
 import { BoardSettingsForm } from "@/components/board/settings/BoardSettingsForm";
 
@@ -19,7 +19,8 @@ export default async function BoardSettingsPage({ params }: PageProps) {
   try {
     const boards = await apiFetch<Board[]>(`/boards`, { cache: "no-store" });
     board = boards.find((b) => b.id === boardId);
-  } catch {
+  } catch (err) {
+    if (isUnauthorized(err)) redirect(sessionExpiredPath(`/board/${boardId}/settings`));
     notFound();
   }
   if (!board) notFound();
