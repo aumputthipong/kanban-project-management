@@ -25,11 +25,11 @@ export default defineConfig({
       reporter: ["text-summary", "html"],
       // Floors sit just under the measured numbers; raise them in the PR that adds tests (docs/CODE-NOTES.md).
       thresholds: {
-        statements: 64,
-        branches: 56,
-        functions: 60,
-        lines: 65,
-        "src/store/**": { statements: 88, lines: 89 },
+        statements: 67,
+        branches: 58,
+        functions: 63,
+        lines: 67,
+        "src/store/**": { statements: 91, lines: 92 },
         "src/hooks/**": { statements: 84, lines: 85 },
         "src/lib/**": { statements: 65, lines: 66 },
       },
