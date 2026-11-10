@@ -46,15 +46,7 @@ jobs:
           working-directory: backend
 
       - name: Run tests
-        run: go test -race -coverprofile=coverage.out ./...
-
-      - name: Upload coverage artifact
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: backend-coverage
-          path: backend/coverage.out
-          if-no-files-found: ignore
+        run: go test -race ./...
 
       - name: Build production binary
         run: |
@@ -92,8 +84,20 @@ jobs:
           cache-dependency-path: backend/go.sum
 
       # testcontainers starts postgres:15-alpine through the runner's Docker daemon.
+      # The integration build also runs every unit test, so this profile is the whole backend.
       - name: Run integration tests
-        run: go test -race -tags=integration ./...
+        run: go test -race -tags=integration -coverprofile=coverage.out ./...
+
+      - name: Coverage floor
+        run: node ../scripts/check-go-coverage.mjs coverage.out
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: backend/coverage.out
+          if-no-files-found: ignore
 
   frontend:
     name: Frontend (typecheck + test + build)

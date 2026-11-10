@@ -1,0 +1,19 @@
+{
+  "exclude": [
+    "internal/db/",
+    "docs/",
+    "internal/service/mock/",
+    "internal/testutil/",
+    "cmd/seed/"
+  ],
+  "global": 61,
+  "packages": {
+    "internal/core": 83,
+    "internal/handler": 75,
+    "internal/middleware": 60,
+    "internal/service": 72,
+    "internal/token": 79,
+    "internal/util": 91,
+    "internal/websocket": 89
+  }
+}
