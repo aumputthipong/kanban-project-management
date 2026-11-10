@@ -5,7 +5,7 @@ Working agreement สำหรับ AI coding agents ที่เข้าม�
 ## Project at a glance
 
 - **Frontend:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Zustand · @dnd-kit
-- **Backend:** Go 1.25 · chi · sqlc · pgx/v5 · Gorilla WebSocket · golang-migrate · JWT
+- **Backend:** Go 1.26 · chi · sqlc · pgx/v5 · Gorilla WebSocket · golang-migrate · JWT
 - **Database:** PostgreSQL 15 · UUID v4 keys · migrations รันอัตโนมัติตอน startup
 - **Realtime:** WebSocket hub (1 room ต่อ board), optimistic UI ฝั่ง client
 
@@ -253,7 +253,7 @@ Everything else — design rationale, history ("the old X did Y"), step-by-step 
 | ประเภทงาน          | ต้องรัน                                              |
 |---------------------|------------------------------------------------------|
 | Backend logic       | `make test` (`go test ./...`)                        |
-| Backend critical path | `make test-integration` (real Postgres via Docker) |
+| Backend critical path | `make test-integration` (real Postgres via Docker); `make cover-check` = same + coverage floor |
 | Frontend logic      | `make test-fe-cover` (vitest + coverage floor; `make test-fe` = no coverage) |
 | Frontend types      | `make typecheck` (`tsc --noEmit`)                    |
 | **UI change**       | `grep -rn 'bg-\[#\|text-\[#\|border-\[#' frontend/src` ต้องไม่เจอ + เปิด browser ทดสอบจริง |

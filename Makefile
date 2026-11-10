@@ -68,6 +68,11 @@ test-cover: ## Backend tests + write coverage.out
 	cd backend && go test -race -coverprofile=coverage.out ./...
 	cd backend && go tool cover -func=coverage.out | tail -1
 
+.PHONY: cover-check
+cover-check: ## Backend coverage floor (integration profile, needs Docker; same as CI)
+	cd backend && go test -race -tags=integration -coverprofile=coverage.out ./...
+	node scripts/check-go-coverage.mjs backend/coverage.out
+
 .PHONY: typecheck
 typecheck: ## tsc --noEmit
 	cd frontend && npx tsc --noEmit

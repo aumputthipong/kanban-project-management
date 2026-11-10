@@ -1913,16 +1913,19 @@ func (q *Queries) GetUserSettings(ctx context.Context, userID string) (UserSetti
 	return i, err
 }
 
-const hardDeleteBoard = `-- name: HardDeleteBoard :exec
+const hardDeleteBoard = `-- name: HardDeleteBoard :execrows
 DELETE FROM boards
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NOT NULL
 `
 
 // Permanent delete — child rows (columns, cards, members, ...) go with it
-// via ON DELETE CASCADE.
-func (q *Queries) HardDeleteBoard(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, hardDeleteBoard, id)
-	return err
+// via ON DELETE CASCADE. Only a stashed board can be deleted.
+func (q *Queries) HardDeleteBoard(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, hardDeleteBoard, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const insertCardTag = `-- name: InsertCardTag :exec
@@ -2512,15 +2515,18 @@ func (q *Queries) RenameColumn(ctx context.Context, arg RenameColumnParams) erro
 	return err
 }
 
-const restoreStashedBoard = `-- name: RestoreStashedBoard :exec
+const restoreStashedBoard = `-- name: RestoreStashedBoard :execrows
 UPDATE boards
 SET deleted_at = NULL
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NOT NULL
 `
 
-func (q *Queries) RestoreStashedBoard(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, restoreStashedBoard, id)
-	return err
+func (q *Queries) RestoreStashedBoard(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreStashedBoard, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const revokeActiveBoardInvites = `-- name: RevokeActiveBoardInvites :exec

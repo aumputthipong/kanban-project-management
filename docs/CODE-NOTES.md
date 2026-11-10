@@ -175,6 +175,18 @@ the behaviour.
   FK has no `ON DELETE`. Sandbox creation is not one transaction; the purge
   collects half-seeded sandboxes.
 
+### Test coverage
+
+- Floors live in `backend/coverage-floors.json` and are checked by
+  `scripts/check-go-coverage.mjs` against the integration job's profile, the
+  only run that sees service-layer coverage (it also runs every unit test).
+- Generated code, mocks and test helpers are excluded; untested packages
+  still count at 0%. Per-package floors exist so a growing `util` can't hide a
+  falling `token`.
+- Floors sit about 2 points under the measured number. A PR that adds tests
+  raises them in the same PR (manual ratchet); the script hints when a
+  package is more than 5 points over its floor.
+
 ### Known issues
 
 - **T6** — `CreateColumn` reads positions and writes a midpoint in Go without a

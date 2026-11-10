@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/service"
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/util"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type BoardHandler struct {
@@ -231,6 +233,7 @@ func (h *BoardHandler) GetStashedBoards(w http.ResponseWriter, r *http.Request) 
 // @Param    boardID path string true "Board UUID"
 // @Success  204
 // @Failure  403 {object} httputil.ErrorResponse
+// @Failure  404 {object} httputil.ErrorResponse "board not in the stash"
 // @Router   /api/stash/{boardID} [delete]
 func (h *BoardHandler) HardDelete(w http.ResponseWriter, r *http.Request) error {
 	boardID, err := httputil.GetUUIDParam(r, "boardID")
@@ -239,6 +242,9 @@ func (h *BoardHandler) HardDelete(w http.ResponseWriter, r *http.Request) error 
 	}
 
 	if err := h.boardService.HardDeleteBoard(r.Context(), boardID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return httputil.NewAPIError(http.StatusNotFound, "Not found", nil)
+		}
 		return httputil.NewAPIError(http.StatusInternalServerError, "Delete failed", err)
 	}
 
@@ -251,6 +257,7 @@ func (h *BoardHandler) HardDelete(w http.ResponseWriter, r *http.Request) error 
 // @Security CookieAuth
 // @Param    boardID path string true "Board UUID"
 // @Success  204
+// @Failure  404 {object} httputil.ErrorResponse "board not in the stash"
 // @Router   /api/stash/{boardID}/restore [patch]
 func (h *BoardHandler) RestoreBoard(w http.ResponseWriter, r *http.Request) error {
 	boardID, err := httputil.GetUUIDParam(r, "boardID")
@@ -259,6 +266,9 @@ func (h *BoardHandler) RestoreBoard(w http.ResponseWriter, r *http.Request) erro
 	}
 
 	if err := h.boardService.RestoreBoard(r.Context(), boardID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return httputil.NewAPIError(http.StatusNotFound, "Not found", nil)
+		}
 		return httputil.NewAPIError(http.StatusInternalServerError, "Failed to restore board", err)
 	}
 
