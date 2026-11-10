@@ -9,6 +9,7 @@ import (
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/db"
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/dto"
 	"github.com/aumputthipong/mini-erp-kanban/backend/internal/util"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -421,11 +422,22 @@ func (s *BoardService) CompleteMyTask(ctx context.Context, cardID, userID string
 }
 
 func (s *BoardService) HardDeleteBoard(ctx context.Context, id string) error {
-	return s.queries.HardDeleteBoard(ctx, id)
+	return requireOneRow(s.queries.HardDeleteBoard(ctx, id))
 }
 
 func (s *BoardService) RestoreBoard(ctx context.Context, id string) error {
-	return s.queries.RestoreStashedBoard(ctx, id)
+	return requireOneRow(s.queries.RestoreStashedBoard(ctx, id))
+}
+
+// requireOneRow maps "no stashed board with that id" to pgx.ErrNoRows.
+func requireOneRow(rows int64, err error) error {
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }
 
 // nil = no change; Description "" is a valid clear.

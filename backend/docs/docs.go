@@ -1099,6 +1099,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse"
                         }
+                    },
+                    "404": {
+                        "description": "board not in the stash",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -1126,6 +1132,12 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "404": {
+                        "description": "board not in the stash",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse"
+                        }
                     }
                 }
             }

@@ -1142,6 +1142,10 @@ paths:
           description: Forbidden
           schema:
             $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
+        "404":
+          description: board not in the stash
+          schema:
+            $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
       security:
       - CookieAuth: []
       summary: Permanently delete stashed board
@@ -1158,6 +1162,10 @@ paths:
       responses:
         "204":
           description: No Content
+        "404":
+          description: board not in the stash
+          schema:
+            $ref: '#/definitions/github_com_aumputthipong_mini-erp-kanban_backend_internal_httputil.ErrorResponse'
       security:
       - CookieAuth: []
       summary: Restore stashed board
