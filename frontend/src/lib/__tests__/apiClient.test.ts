@@ -227,7 +227,7 @@ describe("apiClient login redirect", () => {
 
   it("sends the page to login, keeping where it was, when the session is dead", async () => {
     await expect(apiClient("/me")).rejects.toMatchObject({ status: 401 });
-    expect(assign).toHaveBeenCalledWith("/login?redirect=%2Fboard%2Fb1%2Ftasks");
+    expect(assign).toHaveBeenCalledWith("/auth/session-expired?redirect=%2Fboard%2Fb1%2Ftasks");
   });
 
   it("stays put for a best-effort call marked noLoginRedirect", async () => {

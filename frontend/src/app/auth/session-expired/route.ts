@@ -5,8 +5,9 @@ import { safeRedirectPath } from "@/lib/authForm";
 export function GET(request: NextRequest) {
   const login = new URL("/login", request.url);
   login.searchParams.set("redirect", safeRedirectPath(request.nextUrl.searchParams.get("redirect")));
-  login.searchParams.set("error", "session_expired");
+  const hadSession = request.cookies.has("auth_token");
+  if (hadSession) login.searchParams.set("error", "session_expired");
   const res = NextResponse.redirect(login);
-  res.cookies.delete("auth_token");
+  if (hadSession) res.cookies.delete("auth_token");
   return res;
 }

@@ -67,7 +67,7 @@ describe("InviteAcceptPage", () => {
       http.post(apiUrl("/auth/refresh"), () => new HttpResponse(null, { status: 401 })),
     );
     render(<InviteAcceptPage />);
-    await waitFor(() => expect(assign).toHaveBeenCalledWith("/login?redirect=%2Finvite%2Ftok%25201"));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/session-expired?redirect=%2Finvite%2Ftok%25201"));
     expect(screen.queryByText("เข้าร่วม Project ไม่ได้")).not.toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
     expect(toastMessages()).toEqual([]);

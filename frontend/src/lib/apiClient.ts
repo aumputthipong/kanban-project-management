@@ -1,4 +1,4 @@
-import { API_URL } from "@/lib/constants";
+import { API_URL, sessionExpiredPath } from "@/lib/constants";
 import { useToastStore } from "@/store/useToastStore";
 
 /** `data` is JSON-stringified into the body and defaults the method to POST. */
@@ -50,9 +50,7 @@ function redirectToLogin() {
   if (typeof window === "undefined") return;
   if (window.location.pathname.startsWith("/login")) return;
   const here = window.location.pathname + window.location.search;
-  const dest =
-    here && here !== "/" ? `/login?redirect=${encodeURIComponent(here)}` : "/login";
-  window.location.assign(dest);
+  window.location.assign(sessionExpiredPath(here && here !== "/" ? here : undefined));
 }
 
 // Skips refresh for the refresh endpoint itself, or a dead session recurses.

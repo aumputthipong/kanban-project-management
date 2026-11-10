@@ -10,9 +10,7 @@ export class ApiFetchError extends Error {
 
 export const isUnauthorized = (err: unknown) => err instanceof ApiFetchError && err.status === 401;
 
-/** Where a server page sends a visitor whose session cookie the API rejected. */
-export const sessionExpiredPath = (back: string) =>
-  `/auth/session-expired?redirect=${encodeURIComponent(back)}`;
+export { sessionExpiredPath } from "@/lib/constants";
 
 type FetchOptions = Omit<RequestInit, "headers"> & {
   headers?: Record<string, string>;

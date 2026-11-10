@@ -44,7 +44,7 @@ the behaviour.
 - Opening the invite modal guarantees a usable link: it reuses the active one or
   mints a replacement. The link stays hidden until the modal is opened (less
   leak on screen-share). "New link" revokes the old one.
-- `/invite/<token>` for a logged-out visitor: `apiClient`'s 401 bounce goes to
+- `/invite/<token>` for a logged-out visitor: `apiClient`'s 401 bounce ends on
   `/login?redirect=/invite/<token>`, so the join completes after login.
 
 ### Planning (Notes)
@@ -80,10 +80,11 @@ the behaviour.
 ### Session expiry
 
 - The proxy only checks that an `auth_token` cookie exists, so it sends
-  `/login` to `/dashboard` for any cookie. A server page that gets 401 must
-  not redirect to `/login` directly (that loops forever); it goes through
-  `/auth/session-expired`, which deletes the cookie and then shows login with
-  "เซสชันหมดอายุ". Other API failures throw to the error boundary.
+  `/login` to `/dashboard` for any cookie. A 401 must not redirect to `/login`
+  directly (that loops, or loses the destination); server pages and
+  `apiClient` go through `/auth/session-expired`. If a cookie is present it is
+  deleted and login says "เซสชันหมดอายุ"; without one it is a plain redirect.
+  Other API failures on server pages throw to the error boundary.
 
 ### Project list & landing
 
