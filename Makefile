@@ -45,7 +45,7 @@ seed: ## Seed demo data (demo account + sample board). Needs DB_URL (or backend/
 
 # ─── Verification (mirrors CI) ───────────────────────────────────────────────
 .PHONY: verify
-verify: vet lint-go test typecheck test-fe check-comments check-ws-events ## Run everything CI runs (vet + golangci-lint + test + tsc + vitest + comment budget + WS contract)
+verify: vet lint-go test typecheck test-fe-cover check-comments check-ws-events ## Run everything CI runs (vet + golangci-lint + test + tsc + vitest + comment budget + WS contract)
 
 .PHONY: vet
 vet: ## go vet ./...
@@ -82,7 +82,7 @@ test-fe: ## Frontend unit tests (vitest)
 	cd frontend && npm test -- --run
 
 .PHONY: test-fe-cover
-test-fe-cover: ## Frontend tests + coverage (frontend/coverage/index.html)
+test-fe-cover: ## Frontend tests + coverage floor (frontend/coverage/index.html)
 	cd frontend && npm run test:coverage
 
 .PHONY: test-e2e

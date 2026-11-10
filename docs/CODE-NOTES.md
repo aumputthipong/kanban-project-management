@@ -84,6 +84,17 @@ the behaviour.
 - The landing page probes `/me/settings` server-side and redirects signed-in
   visitors to their default landing; any failure renders the marketing page.
 
+### Test coverage
+
+- Coverage floors live in `frontend/vitest.config.ts` (`thresholds`), a global
+  floor plus higher ones for `store/`, `hooks/` and `lib/`. CI runs
+  `npm run test:coverage`, so dropping under a floor fails the frontend job.
+- Floors sit about 1.5 points under the measured number. A PR that adds tests
+  raises them to its new number minus 1 (a manual ratchet). Vitest's
+  `autoUpdate` was rejected: it rewrites the config on every local run.
+- Only files with no logic are excluded (`loading.tsx`, `global-error.tsx`).
+  Don't exclude a file because it is hard to test.
+
 ## Backend
 
 ### Routing & middleware

@@ -13,8 +13,26 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/__tests__/**", "src/test/**", "src/types/**", "src/**/*.d.ts"],
+      exclude: [
+        "src/**/__tests__/**",
+        "src/test/**",
+        "src/types/**",
+        "src/**/*.d.ts",
+        // Skeleton markup and the Next.js root error boundary: no logic to test.
+        "src/app/**/loading.tsx",
+        "src/app/global-error.tsx",
+      ],
       reporter: ["text-summary", "html"],
+      // Floors sit just under the measured numbers; raise them in the PR that adds tests (docs/CODE-NOTES.md).
+      thresholds: {
+        statements: 64,
+        branches: 56,
+        functions: 60,
+        lines: 65,
+        "src/store/**": { statements: 88, lines: 89 },
+        "src/hooks/**": { statements: 84, lines: 85 },
+        "src/lib/**": { statements: 65, lines: 66 },
+      },
     },
   },
   resolve: {

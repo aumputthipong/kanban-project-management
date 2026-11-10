@@ -123,8 +123,16 @@ jobs:
       - name: Lint
         run: npm run lint --if-present
 
-      - name: Tests
-        run: npm test -- --run
+      - name: Tests + coverage floor
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          if-no-files-found: ignore
 
       - name: Build
         env:

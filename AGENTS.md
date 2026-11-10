@@ -254,7 +254,7 @@ Everything else — design rationale, history ("the old X did Y"), step-by-step 
 |---------------------|------------------------------------------------------|
 | Backend logic       | `make test` (`go test ./...`)                        |
 | Backend critical path | `make test-integration` (real Postgres via Docker); `make cover-check` = same + coverage floor |
-| Frontend logic      | `make test-fe` (vitest)                              |
+| Frontend logic      | `make test-fe-cover` (vitest + coverage floor; `make test-fe` = no coverage) |
 | Frontend types      | `make typecheck` (`tsc --noEmit`)                    |
 | **UI change**       | `grep -rn 'bg-\[#\|text-\[#\|border-\[#' frontend/src` ต้องไม่เจอ + เปิด browser ทดสอบจริง |
 | E2E flow            | `make test-e2e` (Playwright)                         |
