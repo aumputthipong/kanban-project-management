@@ -54,8 +54,8 @@ function CardModalHeaderImpl({
                 e.currentTarget.blur();
               }
             }}
-            placeholder="Enter card title..."
-            className="-ml-2 w-full px-2 py-0.5 text-xl font-semibold tracking-tight text-slate-900 bg-transparent border border-transparent rounded-md hover:border-slate-200 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint transition-colors placeholder:text-slate-400"
+            placeholder="Task title"
+            className="-ml-2 w-full px-2 py-0.5 text-xl font-semibold tracking-tight text-slate-900 bg-transparent border border-transparent rounded-md hover:border-slate-200 focus:outline-none focus:border-primary focus:ring-3 focus:ring-surface-tint transition-colors placeholder:text-slate-500"
           />
         ) : (
           <h2 className="py-0.5 text-xl font-semibold tracking-tight text-slate-900">{title}</h2>

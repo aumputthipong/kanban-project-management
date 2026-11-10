@@ -37,6 +37,7 @@ interface BoardState {
   clearFilterPriorities: () => void;
   toggleFilterTag: (tagId: string) => void;
   clearFilterTags: () => void;
+  clearFilters: () => void;
   moveCard: (
     cardId: string,
     toColumnId: string,
@@ -113,6 +114,8 @@ export const useBoardStore = create<BoardState>((set) => ({
         : [...state.filterTagIds, tagId],
     })),
   clearFilterTags: () => set({ filterTagIds: [] }),
+  clearFilters: () =>
+    set({ filterAssigneeId: null, filterPriorities: [], filterTagIds: [] }),
 
   moveCard: (cardId, toColumnId, position, isDone, completedAt) =>
     set((state) => {

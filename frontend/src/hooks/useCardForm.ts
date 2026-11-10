@@ -54,7 +54,7 @@ export function useCardForm(
       const reverted = { ...cur, title: card.title };
       formRef.current = reverted;
       setForm(reverted);
-      setError("Title cannot be empty.");
+      setError("ชื่องานว่างไม่ได้ จึงคืนเป็นชื่อเดิม");
       return;
     }
     if (fieldEqual(field, cur, committedRef.current)) return;
