@@ -23,3 +23,6 @@ node_modules/
 
 # Impeccable design tool state (critique snapshots, live config)
 .impeccable/
+
+# Coverage profiles
+backend/coverage.out
