@@ -11,7 +11,9 @@ export function proxy(request: NextRequest) {
   const isAuthPage  = AUTH_PAGES.some((r) => pathname.startsWith(r));
 
   if (isProtected && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const login = new URL("/login", request.url);
+    login.searchParams.set("redirect", pathname + request.nextUrl.search);
+    return NextResponse.redirect(login);
   }
 
   if (isAuthPage && token) {
