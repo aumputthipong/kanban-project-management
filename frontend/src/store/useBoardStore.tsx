@@ -291,10 +291,19 @@ export const useBoardStore = create<BoardState>((set) => ({
       columns: state.columns.filter((col) => col.id !== columnId),
     })),
 
+  // Mirrors the backend: a card's is_done follows its column's category.
   updateColumnInStore: (columnId, patch) =>
     set((state) => ({
-      columns: state.columns.map((col) =>
-        col.id === columnId ? { ...col, ...patch } : col
-      ),
+      columns: state.columns.map((col) => {
+        if (col.id !== columnId) return col;
+        const next = { ...col, ...patch };
+        if (!patch.category) return next;
+        const done = patch.category === "DONE";
+        const now = new Date().toISOString();
+        next.cards = col.cards.map((card) =>
+          card.is_done === done ? card : { ...card, is_done: done, completed_at: done ? now : null },
+        );
+        return next;
+      }),
     })),
 }));

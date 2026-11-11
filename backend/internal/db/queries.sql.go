@@ -2619,6 +2619,26 @@ func (q *Queries) StashBoard(ctx context.Context, id string) error {
 	return err
 }
 
+const syncCardsDoneWithColumn = `-- name: SyncCardsDoneWithColumn :exec
+UPDATE cards
+SET is_done      = ($1::text = 'DONE'),
+    completed_at = CASE WHEN $1::text = 'DONE' THEN CURRENT_TIMESTAMP ELSE NULL END,
+    updated_at   = CURRENT_TIMESTAMP
+WHERE column_id = $2
+  AND is_done <> ($1::text = 'DONE')
+`
+
+type SyncCardsDoneWithColumnParams struct {
+	Category string
+	ColumnID string
+}
+
+// A card's is_done mirrors its column's category; only cards whose state flips are touched.
+func (q *Queries) SyncCardsDoneWithColumn(ctx context.Context, arg SyncCardsDoneWithColumnParams) error {
+	_, err := q.db.Exec(ctx, syncCardsDoneWithColumn, arg.Category, arg.ColumnID)
+	return err
+}
+
 const touchBoardMemberIfStale = `-- name: TouchBoardMemberIfStale :exec
 UPDATE board_members
 SET last_accessed_at = now()

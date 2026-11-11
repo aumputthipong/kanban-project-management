@@ -196,6 +196,25 @@ describe("updateColumnInStore", () => {
     expect(useBoardStore.getState().columns[0].color).toBe("blue");
   });
 
+  it("turning a column into DONE marks its open cards done", () => {
+    useBoardStore.setState({ columns: [makeColumn({ cards: [makeCard({ id: "c1", is_done: false, completed_at: null })] })] });
+    useBoardStore.getState().updateColumnInStore("col-1", { category: "DONE" });
+    const card = useBoardStore.getState().columns[0].cards[0];
+    expect(card.is_done).toBe(true);
+    expect(card.completed_at).not.toBeNull();
+  });
+
+  it("turning a DONE column back into TODO reopens its cards, keeping finished dates on others", () => {
+    const finished = makeCard({ id: "c1", is_done: true, completed_at: "2026-11-01T00:00:00Z" });
+    useBoardStore.setState({ columns: [makeColumn({ category: "DONE", cards: [finished] })] });
+
+    useBoardStore.getState().updateColumnInStore("col-1", { category: "DONE", title: "Shipped" });
+    expect(useBoardStore.getState().columns[0].cards[0].completed_at).toBe("2026-11-01T00:00:00Z");
+
+    useBoardStore.getState().updateColumnInStore("col-1", { category: "TODO" });
+    expect(useBoardStore.getState().columns[0].cards[0]).toMatchObject({ is_done: false, completed_at: null });
+  });
+
   it("does not affect other columns", () => {
     const col2 = makeColumn({ id: "col-2", title: "Other" });
     useBoardStore.setState({ columns: [makeColumn(), col2] });
