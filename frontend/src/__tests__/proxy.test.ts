@@ -37,9 +37,6 @@ describe("proxy", () => {
     expect(new URL(run("/register", "jwt").location!).pathname).toBe("/dashboard");
   });
 
-  // Known loop: a cookie the API rejects bounces /login -> /dashboard -> /login forever.
-  it.todo("clears an auth_token the API rejects instead of bouncing back to /dashboard");
-
   it("leaves login and register alone for a signed-out visitor", () => {
     expect(run("/login").location).toBeNull();
     expect(run("/register").location).toBeNull();

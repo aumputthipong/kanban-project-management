@@ -1,18 +1,19 @@
 import { CreateBoardButton } from "@/components/CreateBoardButton";
 import { BoardsClient } from "@/components/project-list/BoardsClient";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, isUnauthorized, sessionExpiredPath } from "@/lib/api";
 import { Board } from "@/types/board";
 import { redirect } from "next/navigation";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default async function DashboardPage() {
-  // apiFetch throws on 401 — redirect instead of hitting the error boundary.
+  // A bare /login redirect loops: the proxy bounces any auth_token back here (docs/CODE-NOTES.md).
   let boards: Board[];
   try {
     boards = await apiFetch<Board[]>("/boards", { cache: "no-store" });
-  } catch {
-    redirect("/login?redirect=/dashboard");
+  } catch (err) {
+    if (isUnauthorized(err)) redirect(sessionExpiredPath("/dashboard"));
+    throw err;
   }
   // Server component: Date.now() runs once per request.
   // eslint-disable-next-line react-hooks/purity
