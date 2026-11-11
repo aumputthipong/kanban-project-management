@@ -20,7 +20,8 @@ the behaviour.
 - **Column category** decides card state: switching a column between TODO and
   DONE flips `is_done`/`completed_at` on its cards in the same transaction
   (and in the store), or they linger in My Work. Cards already in the right
-  state keep their `completed_at`.
+  state keep their `completed_at`. No per-card event is broadcast: other
+  clients apply the same rule when they receive `COLUMN_UPDATED`.
 - **DONE columns** default to collapsed, remembered per board + column in
   localStorage. The collapsed strip is still a drop target (drag a card onto it
   to close it).
