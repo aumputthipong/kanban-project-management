@@ -159,6 +159,15 @@ SET title    = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1;
 
+-- name: SyncCardsDoneWithColumn :exec
+-- A card's is_done mirrors its column's category; only cards whose state flips are touched.
+UPDATE cards
+SET is_done      = (sqlc.arg(category)::text = 'DONE'),
+    completed_at = CASE WHEN sqlc.arg(category)::text = 'DONE' THEN CURRENT_TIMESTAMP ELSE NULL END,
+    updated_at   = CURRENT_TIMESTAMP
+WHERE column_id = sqlc.arg(column_id)
+  AND is_done <> (sqlc.arg(category)::text = 'DONE');
+
 -- name: RenameColumn :exec
 UPDATE columns
 SET title = $2, updated_at = CURRENT_TIMESTAMP

@@ -249,14 +249,31 @@ type UpdateColumnParams struct {
 	Color    *string
 }
 
+// Switching a column between TODO and DONE also flips its cards' is_done, in the same tx.
 func (s *BoardCommandService) UpdateColumn(ctx context.Context, p UpdateColumnParams) error {
-	if err := s.queries.UpdateColumn(ctx, db.UpdateColumnParams{
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := s.queries.WithTx(tx)
+
+	if err := qtx.UpdateColumn(ctx, db.UpdateColumnParams{
 		ID:       p.ID,
 		Title:    p.Title,
 		Category: p.Category,
 		Color:    p.Color,
 	}); err != nil {
 		return fmt.Errorf("update column: %w", err)
+	}
+	if err := qtx.SyncCardsDoneWithColumn(ctx, db.SyncCardsDoneWithColumnParams{
+		Category: p.Category,
+		ColumnID: p.ID,
+	}); err != nil {
+		return fmt.Errorf("sync cards done: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
 	}
 	return nil
 }

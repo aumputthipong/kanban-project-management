@@ -17,6 +17,10 @@ the behaviour.
   path is title + Enter, subtasks stay collapsed, and it sends one
   `CARD_CREATED`. The assignee defaults to the creator; "unassigned" must be a
   deliberate click. It is over the 200-line guideline on purpose — it is one form.
+- **Column category** decides card state: switching a column between TODO and
+  DONE flips `is_done`/`completed_at` on its cards in the same transaction
+  (and in the store), or they linger in My Work. Cards already in the right
+  state keep their `completed_at`.
 - **DONE columns** default to collapsed, remembered per board + column in
   localStorage. The collapsed strip is still a drop target (drag a card onto it
   to close it).
